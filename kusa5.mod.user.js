@@ -9,7 +9,7 @@
 
 //----------------------------------------------------------
 
-// オリジナルのデータ
+// オリジナル
 // ==UserScript==
 // @name        kusa5
 // @namespace   net.buhoho.kusa5
@@ -196,10 +196,10 @@ div.ratepanel {
 /* 非表示状態 */
 #kusa5.comment-hidden .msg { opacity: 0;}
 button.comment-hidden {
-	opacity: .6;
+	opacity: 1;
 }
 #kusa5.comment-hidden button.comment-hidden {
-	opacity: 1;
+	opacity: .3;
 }
 
 /*
@@ -280,8 +280,15 @@ const $video = $(`<video type="video/mp4"'
 	});
 
 $video.videoToggle = function() {
-	var v = $video[0];
-	v.paused ? v.play() : v.pause();
+	var playPauseButton = document.getElementsByClassName('btn toggle play')[0];
+	var v = $video[0];	
+	if(v.paused === true) {
+		v.play();
+		playPauseButton.innerHTML = "▲";
+	}else {
+		v.pause();
+		playPauseButton.innerHTML = "〓";
+	}
 };
 
 $video.click($video.videoToggle);
