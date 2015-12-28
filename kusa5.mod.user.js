@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     6
+// @version     7
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -120,19 +120,54 @@ input+label {
   /* 再生マークは▲記号を横に90回転させ表現 */
   transform: rotate(90deg);
 }
+.volume-slider {
+  position: relative;
+  float: right;
+  width: 100px;
+  height: 24px;
+  margin: 4px;
+}
+.volume-slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(0,0,0,0.3);
+  height: 5px;
+  width: 100%;
+  position: absolute;
+  left: 0;
+  top: 10px;
+}
+.volume-slider input[type="range"]:focus {
+  outline: none;
+}
+.volume-slider input[type="range"]::-moz-range-thumb {
+  border: none;
+  background: #008ee0;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+.volume-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: #008ee0;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
 button.btn.volume {
   position:relative;
-}
-button.btn.volume > span.volume-num {
-  font-size: 8px;
-  position: absolute;
-  top: 2px;
-  right: 5px;
 }
 .controle-panel .playtime {
   line-height: 30px;
 }
-
 
 input.btn {
   display: none;
@@ -265,7 +300,7 @@ const $video = $(`<video type="video/mp4"'
     // レート情報の記憶
     $('input[value="'+ localStorage.nicoRate +'"]').click();
     ev.target.playbackRate = localStorage.nicoRate;
-    ev.target.volume = localStorage.nicoVolume * 0.2;
+    switchVolumeState();
     if (!isIframe)
       return;
     // バッファー再生用のプレーヤーは処理を重くしないためにrata1
@@ -619,9 +654,9 @@ const CONTROLE_PANEL = `
   <button class="btn toggle play">▲</button>
   ${rateForm()}
   <button class="btn full r">■</button>
-  <button class="btn volume r">🔊
-    <span class="volume-num"></span>
-  </button>
+  <div class="volume-slider">
+    <input type="range" name="bar"  id="volume-slider" step="1" min="0" max="100" value="0" />
+  </div>
   <button class="btn comment-hidden r">💬</button>
   <div class="playtime r">
     <span class="current"></span>
@@ -637,6 +672,23 @@ function ctrPanel() {
   return $panel;
 }
 
+function updateSlider(volume) {
+  var slider = $('#volume-slider')[0];
+  const range = slider.clientWidth;
+  const max = slider.max;
+  slider.value = volume; // mute のため
+  $video[0].volume = volume * 0.01;
+}
+
+function switchVolumeState() {
+ if (JSON.parse(localStorage.nicoVolumeMute)) {
+   $('#kusa5 button.volume').addClass('mute');
+   updateSlider(0);
+ } else {
+   $('#kusa5 button.volume').removeClass('mute');
+   updateSlider(localStorage.nicoVolume);
+ }
+}
 
 //update Progress Bar control
 var updatebar = function(e) {
@@ -665,7 +717,10 @@ function isIgnore() {
   if (movieIdPrefix === 'sm') { // 一般動画
     result = false;
   }
-  else if (movieIdPrefix.match(/[0-9]+/)) { // チャンネル動画
+  else if (movieIdPrefix === 'so') { // チャンネル動画
+    result = false;
+  }
+  else if (movieIdPrefix.match(/[0-9]+/)) { // チャンネル動画2
     result = false;
   }
   return result;
@@ -695,18 +750,14 @@ function isIgnore() {
   });
   $('input[value="'+ localStorage.nicoRate +'"]').click();
 
-  $('#kusa5 button.volume').click(ev => {
-    localStorage.nicoVolume = localStorage.nicoVolume++ % 5 + 1;
-    $('#kusa5 span.volume-num').text(localStorage.nicoVolume);
-    $video[0].volume = localStorage.nicoVolume * 0.2;
+  $('#volume-slider').on('input', ev => {
+    localStorage.nicoVolume = ev.target.value;
+    if (JSON.parse(localStorage.nicoVolumeMute))
+      localStorage.nicoVolumeMute = false;
+    switchVolumeState();
   });
-  // デフォルトボリュームの表示
-  localStorage.nicoVolume = localStorage.nicoVolume || 5;
-  $('#kusa5 span.volume-num').text(localStorage.nicoVolume);
-
-  $('#kusa5 button.comment-hidden')
-    .click(ev => kusa5.toggleClass('comment-hidden'));
-
+  
+  $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
 
   var promise = loadApiInfo(launchID).then(info => {
     $video.attr('src', info.url);
@@ -723,7 +774,7 @@ function isIgnore() {
     timeDrag = true;
     updatebar(e);
   });
-  $(document).mouseup(function(e) {
+  $('.progressBar').mouseup(function(e) {
     if(!timeDrag)
       return;
     timeDrag = false;
