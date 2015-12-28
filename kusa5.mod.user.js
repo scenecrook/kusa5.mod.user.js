@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     5
+// @version     6
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -413,7 +413,8 @@ function xml2chats(xml) {
   return _.chain($(xml).find('chat'))
     .map(ch => 
       ({ t: $(ch).attr('vpos') -0, //cast
-      c: $(ch).text()}))
+        c: $(ch).text(),
+        m: $(ch).attr('mail') || '' })) // コマンド
     .filter(ngfilter)
     .sortBy(c => c.t);
 }
@@ -482,15 +483,56 @@ function loadApiInfo(id) {
   },{}));
 }
 
+const colortable = {
+  white:   '#FFFFFF',
+  red:     '#FF0000',
+  pink:    '#FF8080',
+  orange:  '#FFC000',
+  yellow:  '#FFFF00',
+  green:   '#00FF00',
+  cyan:    '#00FFFF',
+  blue:    '#0000FF',
+  purple:  '#C000FF',
+  black:   '#000000',
+  white2:  '#CCCC99',
+  niconicowhite: '#CCCC99',
+  red2:    '#CC0033',
+  truered: '#CC0033',
+  pink2:   '#FF33CC',
+  orange2: '#FF6600',
+  passionorange: '#FF6600',
+  yellow2: '#999900',
+  madyellow: '#999900',
+  green2:  '#00CC66',
+  elementalgreen: '#00CC66',
+  cyan2:   '#00CCCC',
+  blue2:   '#3399FF',
+  marineblue: '#3399FF',
+  purple2: '#6633CC',
+  nobleviolet: '#6633CC',
+  black2:  '#666666',
+}
+
 function marqueeMsg(ch) {
   const baseW = $('#kusa5').width() + 10;
   const hasMsg = $('#kusa5 .msg').size() > 0;
 
-  $m = $('<span class="msg"/>').text(ch.c);
-
+  $m = $('<span class="msg"/>');
+  $m.text(ch.c);
+  $m.html($m.text().replace(/\n/, '<br>'));
   $m.css('transform', `translate3d(${baseW}px, 0, 0)`);
   $video.after($m);
-
+  
+  _.some(ch.m.split(' '), color => {
+    if (color in colortable) {
+      $m.css('color', colortable[color]);
+      return true;
+    } else if (color[0] === '#') {
+      $m.css('color', color);
+      return true;
+    }
+  });
+  
   function hasRightSpace(l) {
     // 一番右端にあるmsgの右端の位置
     var bigwidth = _.max(_.map($('#kusa5').find(l),
@@ -619,13 +661,14 @@ function isIgnore() {
     movieId = uriArray[uriArray.length - 1];
   }
   var movieIdPrefix = movieId.substring(0, 2);
+  var result = true;
   if (movieIdPrefix === 'sm') { // 一般動画
-    return true;
+    result = false;
   }
-  else if (movieIdPrefix.match(/[^0-9]+/)) { // チャンネル動画
-    return true;
+  else if (movieIdPrefix.match(/[0-9]+/)) { // チャンネル動画
+    result = false;
   }
-  return false;
+  return result;
 }
 
 /** main というかエントリーポイント */
