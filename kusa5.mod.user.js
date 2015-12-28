@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     1
+// @version     4
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -18,11 +18,6 @@
 // @grant       none
 // @description ニコ動html5表示
 // ==/UserScript==
-
-$('.playerContainer').hide();
-$('#playlist').hide(); //お好み
-$('#playerContainerSlideArea').attr('id', 'kusa5');
-$('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
 
 const OPT = {
   buffer: false, // たぶんfirefoxじゃないと正常に動かない
@@ -613,9 +608,34 @@ var updatebar = function(e) {
   return true;
 }
 
+// 対応外（ニコニコムービーメーカーとか）のURLを弾く
+function isIgnore() {
+  var uri = location.href;
+  var uriArray = uri.split('/');
+  var movieId;
+  if (uri.endsWith('/')) {
+      movieId = uriArray[uriArray.length - 2];
+  }
+  else {
+      movieId = uriArray[uriArray.length - 1];
+  }
+  return !movieId.contains('sm');
+}
 
 /** main というかエントリーポイント */
-;(function () {
+; (function () {
+  if (isIgnore()) {
+    $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応)</p>')
+    
+    // TODO: エコノミー動画はMP4で再エンコードされているらしいのでフォールバック
+    return;
+  }
+  
+  $('.playerContainer').hide();
+  $('#playlist').hide(); //お好み
+  $('#playerContainerSlideArea').attr('id', 'kusa5');
+  $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
+  
   const kusa5 = $('#kusa5')
     .append($video)
     .append(ctrPanel());
@@ -668,7 +688,7 @@ var updatebar = function(e) {
     if (!keyTbl[e.keyCode])
       return;
     keyTbl[e.keyCode]();
-    e.preventDefault();
+    e.preventDefault();	
   });
   kusa5.keydown(e => {
     //ボタンの処理が登録されてたらブラウザの動作をうちけす
