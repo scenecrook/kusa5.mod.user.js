@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     7
+// @version     8
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -102,14 +102,14 @@ input+label {
   width: 100%;
 }
 .controle-panel .progressBar span {
-  position: absolute;;
+  position: absolute;
   top: 0;
   left: 0;
   width: 0;
   height: 100%;
 }
 .controle-panel .progressBar.seek .mainbar {
-  background: #9BD1FF;
+  background: #0078E7;
 }
 .controle-panel .progressBar.seek .bufferbar {
   background: hsla(0, 100%, 100%, 0.33);
@@ -127,12 +127,24 @@ input+label {
   height: 24px;
   margin: 4px;
 }
+
+#volume-bar {
+  -webkit-appearance: none;
+  background: #008ee0;
+  border: 0;
+  height: 5px;
+  width: 0px;
+  display: block;
+  position: absolute;
+  left: 0px;
+  top:  10px;
+}
+
 .volume-slider input[type="range"] {
   -webkit-appearance: none;
   appearance: none;
   padding: 0;
   margin: 0;
-  background: rgba(0,0,0,0.3);
   height: 5px;
   width: 100%;
   position: absolute;
@@ -144,20 +156,20 @@ input+label {
 }
 .volume-slider input[type="range"]::-moz-range-thumb {
   border: none;
-  background: #008ee0;
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
+  background: #0078E7;
+  width: 8px;
+  height: 16px;
+  border-radius: 2px;
   cursor: pointer;
   box-sizing: border-box;
 }
 .volume-slider input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  background: #008ee0;
-  width: 10px;
-  height: 10px;
-  border-radius: 5px;
+  background: #0078E7;
+  width: 8px;
+  height: 16px;
+  border-radius: 2px;
   cursor: pointer;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
@@ -200,7 +212,7 @@ div.ratepanel {
   z-index: 999;
   display: inline-block;
   word-break: keep-all;
-  font-size: 2.5em;
+  font-size: 1.75em;
   font-family: "Arial", "sans-serif"; /* 確か元のFlashプレーヤーはArial指定になっていたはず　要するにブラウザ任せ */
   color: white;
   padding: 0 .5em;
@@ -254,6 +266,9 @@ button.comment-hidden {
     width: 800px !important;
     height: 450px !important;
   }
+  #kusa5 .msg {
+    font-size: 2.2em; 
+  }
 }
 
 @media screen and (min-width: 980px) {
@@ -261,12 +276,18 @@ button.comment-hidden {
     width: 960px !important;
     height: 540px !important;
   }
+  #kusa5 .msg {
+    font-size: 2.5em; 
+  }
 }
 
 @media screen and (min-width: 1300px) {
   #kusa5 {
     width: 1280px !important;
     height: 720px !important;
+  }
+  #kusa5 .msg {
+    font-size: 3em; 
   }
 }
 
@@ -656,6 +677,7 @@ const CONTROLE_PANEL = `
   <button class="btn full r">■</button>
   <div class="volume-slider">
     <input type="range" name="bar"  id="volume-slider" step="1" min="0" max="100" value="0" />
+    <span id="volume-bar"></span>
   </div>
   <button class="btn comment-hidden r">💬</button>
   <div class="playtime r">
@@ -674,9 +696,11 @@ function ctrPanel() {
 
 function updateSlider(volume) {
   var slider = $('#volume-slider')[0];
+  var bar = $('#volume-bar')[0];
   const range = slider.clientWidth;
   const max = slider.max;
-  slider.value = volume; // mute のため
+  slider.value = volume;
+  bar.style.width = ((range / max) * volume) +'px';
   $video[0].volume = volume * 0.01;
 }
 
