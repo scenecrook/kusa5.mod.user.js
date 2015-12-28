@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     4
+// @version     5
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -24,13 +24,12 @@ const OPT = {
   debug: false
 };
 
-const ASKURL = 'http://flapi.nicovideo.jp/api/getflv?v=sm';
+const ASKURL = 'http://flapi.nicovideo.jp/api/getflv?v=';
 const THUMB = 'http://tn-skr3.smilevideo.jp/smile?i=';
-const WATCH = 'http://www.nicovideo.jp/watch/sm';
+const WATCH = 'http://www.nicovideo.jp/watch/';
 const apidata = JSON.parse($('#watchAPIDataContainer').text());
-const launchID = apidata.videoDetail.id.substring(2); // 先頭のID
+const launchID = apidata.videoDetail.v; // APIに与える識別子
 const isIframe = window != parent;
-
 
 addGlobalStyle(`
 * {
@@ -299,7 +298,7 @@ function addGlobalStyle(css) {
 function getNextId() {
   // 初回のみカレントID
   const currentID = $('#kusa5 video').data('smid');
-  const id = /\W?sm(\d{3,10})\W?/.source; // 現状見受けられる動画は8桁
+  const id = /\W?s(?:m|o)(\d{3,10})\W?/.source; // 現状見受けられる動画は8桁
   const next = "(?:" + ["次","next","つづ","続","最","終"]
       .map(s => s + ".{0,4}")
       .join("|") + ")";
@@ -612,14 +611,21 @@ var updatebar = function(e) {
 function isIgnore() {
   var uri = location.href;
   var uriArray = uri.split('/');
-  var movieId;
+  var movieId = "";
   if (uri.endsWith('/')) {
-      movieId = uriArray[uriArray.length - 2];
+    movieId = uriArray[uriArray.length - 2];
   }
   else {
-      movieId = uriArray[uriArray.length - 1];
+    movieId = uriArray[uriArray.length - 1];
   }
-  return !movieId.contains('sm');
+  var movieIdPrefix = movieId.substring(0, 2);
+  if (movieIdPrefix === 'sm') { // 一般動画
+    return true;
+  }
+  else if (movieIdPrefix.match(/[^0-9]+/)) { // チャンネル動画
+    return true;
+  }
+  return false;
 }
 
 /** main というかエントリーポイント */
