@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     8
+// @version     9
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -20,6 +20,7 @@
 // ==/UserScript==
 
 const OPT = {
+  noLimit: false, // 察してくれ
   buffer: false, // たぶんfirefoxじゃないと正常に動かない
   debug: false
 };
@@ -27,6 +28,7 @@ const OPT = {
 const ASKURL = 'http://flapi.nicovideo.jp/api/getflv?v=';
 const THUMB = 'http://tn-skr3.smilevideo.jp/smile?i=';
 const WATCH = 'http://www.nicovideo.jp/watch/';
+const INFO = 'http://ext.nicovideo.jp/api/getthumbinfo/';
 const apidata = JSON.parse($('#watchAPIDataContainer').text());
 const launchID = apidata.videoDetail.v; // APIに与える識別子
 const isIframe = window != parent;
@@ -76,7 +78,7 @@ addGlobalStyle(`
   transition: max-height .2s;
   height: 5px !important;
   opacity: 0.666 !important;
-  transition: all 0.3s ease-out; 
+  transition: all 0.3s ease-out 2.7s; 
   overflow: hidden;
   cursor: default;
 }
@@ -726,7 +728,7 @@ var updatebar = function(e) {
 }
 
 // 対応外（ニコニコムービーメーカーとか）のURLを弾く
-function isIgnore() {
+function getMovieInfo() {
   var uri = location.href;
   var uriArray = uri.split('/');
   var movieId = "";
@@ -736,94 +738,105 @@ function isIgnore() {
   else {
     movieId = uriArray[uriArray.length - 1];
   }
-  var movieIdPrefix = movieId.substring(0, 2);
-  var result = true;
-  if (movieIdPrefix === 'sm') { // 一般動画
-    result = false;
-  }
-  else if (movieIdPrefix === 'so') { // チャンネル動画
-    result = false;
-  }
-  else if (movieIdPrefix.match(/[0-9]+/)) { // チャンネル動画2
-    result = false;
-  }
-  return result;
+  
+  // http://ext.nicovideo.jp/api/getthumbinfo/ がCORSで殺されるのクソすぎじゃないですか
+  return $.ajax({
+    type: 'GET',
+    url: 'http://crossorigin.me/' + INFO + movieId, // crossorigin.meが遅い…　ghippos.netでCORS proxyを立てるまである
+    crossDomain: true,
+    cache: false,
+    dataType: 'xml',
+  });
 }
 
 /** main というかエントリーポイント */
-; (function () {
-  if (isIgnore()) {
-    $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応)</p>')
-    
-    // TODO: エコノミー動画はMP4で再エンコードされているらしいのでフォールバック
-    return;
-  }
-  
-  $('.playerContainer').hide();
-  $('#playlist').hide(); //お好み
-  $('#playerContainerSlideArea').attr('id', 'kusa5');
-  $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
-  
-  const kusa5 = $('#kusa5')
-    .append($video)
-    .append(ctrPanel());
-
-  $('input[name=nicorate]').change(ev => {
-    localStorage.nicoRate =
-    $video.get(0).playbackRate = parseFloat($(ev.target).val());
-  });
-  $('input[value="'+ localStorage.nicoRate +'"]').click();
-
-  $('#volume-slider').on('input', ev => {
-    localStorage.nicoVolume = ev.target.value;
-    if (JSON.parse(localStorage.nicoVolumeMute))
-      localStorage.nicoVolumeMute = false;
-    switchVolumeState();
-  });
-  
-  $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
-
-  var promise = loadApiInfo(launchID).then(info => {
-    $video.attr('src', info.url);
-    $video.get(0).dataset.smid = launchID;
-    return info;
-  });
-
-  if (isIframe)
-    return; // 以降はフォワードページのみの処理
-
-  /* シークバーのドラッグ処理*/
-  var timeDrag = false;  /* Drag status */
-  $('.progressBar.seek').mousedown(function(e) {
-    timeDrag = true;
-    updatebar(e);
-  });
-  $('.progressBar').mouseup(function(e) {
-    if(!timeDrag)
+;(function () {
+  getMovieInfo().then(xml => {
+    var isMP4 = false;
+    $(xml).find('movie_type').each(function (type) {
+      isMP4 = ($(this).text() === 'mp4');
+    });
+    return isMP4;
+  })
+  .then(isMP4 => {
+    if (!isMP4) {
+      $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応)</p>')
       return;
-    timeDrag = false;
-    updatebar(e.pageX);
-  }).mousemove(e=> timeDrag && updatebar(e));
+    } else {
+      $('.playerContainer').hide();
+      $('#playlist').hide(); //お好み
+      $('#playerContainerSlideArea').attr('id', 'kusa5');
+      $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
 
-  // ボタン押された時の動作登録
-  var keyTbl = [];
-  keyTbl[32] = $video.videoToggle; //スペースキー
-  kusa5.keyup(e => {
-    if (!keyTbl[e.keyCode])
-      return;
-    keyTbl[e.keyCode]();
-    e.preventDefault();	
+      const kusa5 = $('#kusa5')
+        .append($video)
+        .append(ctrPanel());
+
+      $('input[name=nicorate]').change(ev => {
+        localStorage.nicoRate =
+        $video.get(0).playbackRate = parseFloat($(ev.target).val());
+      });
+      $('input[value="'+ localStorage.nicoRate +'"]').click();
+
+      $('#volume-slider').on('input', ev => {
+        localStorage.nicoVolume = ev.target.value;
+        if (JSON.parse(localStorage.nicoVolumeMute))
+          localStorage.nicoVolumeMute = false;
+        switchVolumeState();
+      });
+
+      $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
+
+      var promise = loadApiInfo(launchID).then(info => {
+        $video.attr('src', info.url);
+        $video.get(0).dataset.smid = launchID;
+        return info;
+      });
+
+      if (isIframe)
+        return; // 以降はフォワードページのみの処理
+
+      // プレミアム会員かどうか
+      var isPremium = true;
+      if ($('#siteHeaderNotificationPremium').length) {
+        isPremium = false;
+      }
+      
+      if (isPremium || OPT.noLimit) {
+        /* シークバーのドラッグ処理*/
+        var timeDrag = false;  /* Drag status */
+        $('.progressBar.seek').mousedown(function(e) {
+          timeDrag = true;
+          updatebar(e);
+        });
+        $('.progressBar').mouseup(function(e) {
+          if(!timeDrag)
+            return;
+          timeDrag = false;
+          updatebar(e.pageX);
+        }).mousemove(e=> timeDrag && updatebar(e));
+      }
+      
+      // ボタン押された時の動作登録
+      var keyTbl = [];
+      keyTbl[32] = $video.videoToggle; //スペースキー
+      kusa5.keyup(e => {
+        if (!keyTbl[e.keyCode])
+          return;
+        keyTbl[e.keyCode]();
+        e.preventDefault();	
+      });
+      kusa5.keydown(e => {
+        //ボタンの処理が登録されてたらブラウザの動作をうちけす
+        if (keyTbl[e.keyCode])
+          e.preventDefault();
+      });
+
+      //メッセージ取得、文字流しとかのループイベント登録
+      promise.then(loadMsg);
+
+      if (OPT.buffer) // バッファ用のiFrameを作成する
+        setTimeout(() => createBuf(getNextId()), 10000);
+    }
   });
-  kusa5.keydown(e => {
-    //ボタンの処理が登録されてたらブラウザの動作をうちけす
-    if (keyTbl[e.keyCode])
-      e.preventDefault();
-  });
-
-
-  //メッセージ取得、文字流しとかのループイベント登録
-  promise.then(loadMsg);
-
-  if (OPT.buffer) // バッファ用のiFrameを作成する
-    setTimeout(() => createBuf(getNextId()), 10000);
 })();
