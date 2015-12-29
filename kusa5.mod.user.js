@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     9
+// @version     10
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -20,8 +20,10 @@
 // ==/UserScript==
 
 const OPT = {
-  noLimit: false, // 察してくれ
-  buffer: false, // たぶんfirefoxじゃないと正常に動かない
+  noLimit: false,         // 察してくれ
+  hidePlaylist: false,    // 再生リストを非表示にする
+  showPageTop: false,     // HTML5プレーヤーをページの上部に配置する　Flashプレーヤーには影響なし
+  useBuffer: false,       // 次の動画をバッファしておく　たぶんFirefoxじゃないと正常に動かない
   debug: false
 };
 
@@ -56,7 +58,7 @@ addGlobalStyle(`
 }
 #wallImageContainer .wallImageCenteringArea .wallAlignmentArea.image2{
   z-index: 3;
-  background-color: #CCCEC3;
+  background-color: #272727;
 }
 #playerContainerWrapper {
   padding: 24px 0;
@@ -127,7 +129,7 @@ input+label {
   float: right;
   width: 100px;
   height: 24px;
-  margin: 4px;
+  margin: 2px 4px;
 }
 
 #volume-bar {
@@ -157,11 +159,14 @@ input+label {
   outline: none;
 }
 .volume-slider input[type="range"]::-moz-range-thumb {
+  -moz-appearance: none;
+  appearance: none;
   border: none;
   background: #0078E7;
+  opacity: 1;
   width: 8px;
   height: 16px;
-  border-radius: 2px;
+  border-radius: 0;
   cursor: pointer;
   box-sizing: border-box;
 }
@@ -169,9 +174,10 @@ input+label {
   -webkit-appearance: none;
   appearance: none;
   background: #0078E7;
+  opacity: 1;
   width: 8px;
   height: 16px;
-  border-radius: 2px;
+  border-radius: 0;
   cursor: pointer;
   -webkit-box-sizing: border-box;
   box-sizing: border-box;
@@ -365,7 +371,7 @@ function getNextId() {
   // スペースに使われそうな文字(出現しないかもしれない)
   const s = /[\s_|:：]?/.source; 
 
-  const arrows = [
+  const arrows = [  
     " - ",
     "←",
     "→","⇒",
@@ -400,7 +406,7 @@ function buffShift() {
   var $nextPage = $('#buf-video').contents().find('body');
   // ビデオソース書き換え
   var $buf = $nextPage.find('#kusa5 video');
-  if (!OPT.buffer || $buf.size() == 0) {
+  if (!OPT.useBuffer || $buf.size() == 0) {
     FullScreen.cancel();
     return;
   }
@@ -732,12 +738,10 @@ function getMovieInfo() {
   var uri = location.href;
   var uriArray = uri.split('/');
   var movieId = "";
-  if (uri.endsWith('/')) {
+  if (uri.endsWith('/'))
     movieId = uriArray[uriArray.length - 2];
-  }
-  else {
+  else
     movieId = uriArray[uriArray.length - 1];
-  }
   
   // http://ext.nicovideo.jp/api/getthumbinfo/ がCORSで殺されるのクソすぎじゃないですか
   return $.ajax({
@@ -764,9 +768,11 @@ function getMovieInfo() {
       return;
     } else {
       $('.playerContainer').hide();
-      $('#playlist').hide(); //お好み
+      if(OPT.hidePlaylist)
+        $('#playlist').hide();
       $('#playerContainerSlideArea').attr('id', 'kusa5');
-      $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
+      if(OPT.showPageTop)
+        $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
 
       const kusa5 = $('#kusa5')
         .append($video)
@@ -796,14 +802,7 @@ function getMovieInfo() {
       if (isIframe)
         return; // 以降はフォワードページのみの処理
 
-      // プレミアム会員かどうか
-      var isPremium = true;
-      if ($('#siteHeaderNotificationPremium').length) {
-        isPremium = false;
-      }
-      
-      if (isPremium || OPT.noLimit) {
-        /* シークバーのドラッグ処理*/
+      var attachSeekEvent = function() {
         var timeDrag = false;  /* Drag status */
         $('.progressBar.seek').mousedown(function(e) {
           timeDrag = true;
@@ -815,6 +814,29 @@ function getMovieInfo() {
           timeDrag = false;
           updatebar(e.pageX);
         }).mousemove(e=> timeDrag && updatebar(e));
+      };
+      
+      // プレミアム会員かどうか
+      var isPremium = false;
+      if($('#siteHeaderNotificationPremium').is(':hidden')){
+        isPremium = true;
+      }
+      else{
+        if(!OPT.noLimit){
+          // ニコニコ側のJSの反映が遅いときにうまく判定できないため
+          var mo = new MutationObserver(function(){
+            if($('#siteHeaderNotificationPremium').is(':hidden')){
+              attachSeekEvent();
+            }
+          });
+          var siteHeaderNotification = document.getElementById("siteHeaderNotification")
+          var options = {childList: true, subtree: true};
+          mo.observe(siteHeaderNotification, options);
+        }
+      }
+      
+      if (isPremium || OPT.noLimit) {
+        attachSeekEvent();
       }
       
       // ボタン押された時の動作登録
@@ -831,11 +853,11 @@ function getMovieInfo() {
         if (keyTbl[e.keyCode])
           e.preventDefault();
       });
-
+      
       //メッセージ取得、文字流しとかのループイベント登録
       promise.then(loadMsg);
-
-      if (OPT.buffer) // バッファ用のiFrameを作成する
+      
+      if ((isPremium || OPT.noLimit) && OPT.useBuffer) // バッファ用のiFrameを作成する
         setTimeout(() => createBuf(getNextId()), 10000);
     }
   });
