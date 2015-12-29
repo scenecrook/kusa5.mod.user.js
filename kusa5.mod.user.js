@@ -23,7 +23,7 @@ const OPT = {
   noLimit: false,         // 察してくれ
   hidePlaylist: false,    // 再生リストを非表示にする
   showPageTop: false,     // HTML5プレーヤーをページの上部に配置する　Flashプレーヤーには影響なし
-  useBuffer: false,       // 次の動画をバッファしておく　たぶんFirefoxじゃないと正常に動かない
+  useBuffer: false,       // たぶんFirefoxじゃないと正常に動かない
   debug: false
 };
 
