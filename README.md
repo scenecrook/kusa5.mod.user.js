@@ -24,3 +24,8 @@ kusa5.user.js の改造版です。
 ## FLV動画例
 
 [![](http://i.imgur.com/648lGL4.png)]()
+
+## ニコニコの中の人へ
+本当にニコニコ動画（ドワンゴ）名義で公開停止の要求をしているか判断できません。  
+GitHubのdwango Organizationに所属しているアカウントから、空のkusa5.mod.user.jsをPullReqしてください。  
+すぐにマージし、公開を停止します。
