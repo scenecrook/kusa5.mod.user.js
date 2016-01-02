@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     11
+// @version     12
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -21,6 +21,7 @@
 
 const OPT = {
   noLimit: false,         // 察してくれ
+  autoPlay: true,         // 自動再生の有効/無効
   hidePlaylist: false,    // 再生リストを非表示にする
   showPageTop: false,     // HTML5プレーヤーをページの上部に配置する　Flashプレーヤーには影響なし
   useBuffer: false,       // たぶんFirefoxじゃないと正常に動かない
@@ -764,7 +765,9 @@ function getMovieInfo() {
       $('#playerContainerSlideArea').attr('id', 'kusa5');
       if(OPT.showPageTop)
         $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
-
+      if(!OPT.autoPlay)
+        $video.removeAttr('autoplay');
+        
       const kusa5 = $('#kusa5')
         .append($video)
         .append(ctrPanel());
