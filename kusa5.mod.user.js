@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     10
+// @version     11
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -329,7 +329,7 @@ const $video = $(`<video type="video/mp4"'
     // レート情報の記憶
     $('input[value="'+ localStorage.nicoRate +'"]').click();
     ev.target.playbackRate = localStorage.nicoRate;
-    switchVolumeState();
+    updateSlider(localStorage.nicoVolume);
     if (!isIframe)
       return;
     // バッファー再生用のプレーヤーは処理を重くしないためにrata1
@@ -712,16 +712,6 @@ function updateSlider(volume) {
   $video[0].volume = volume * 0.01;
 }
 
-function switchVolumeState() {
- if (JSON.parse(localStorage.nicoVolumeMute)) {
-   $('#kusa5 button.volume').addClass('mute');
-   updateSlider(0);
- } else {
-   $('#kusa5 button.volume').removeClass('mute');
-   updateSlider(localStorage.nicoVolume);
- }
-}
-
 //update Progress Bar control
 var updatebar = function(e) {
   var bar = $('.progressBar.seek');
@@ -767,6 +757,7 @@ function getMovieInfo() {
       $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応)</p>')
       return;
     } else {
+      $('.notify_update_flash_player').hide();
       $('.playerContainer').hide();
       if(OPT.hidePlaylist)
         $('#playlist').hide();
@@ -786,9 +777,7 @@ function getMovieInfo() {
 
       $('#volume-slider').on('input', ev => {
         localStorage.nicoVolume = ev.target.value;
-        if (JSON.parse(localStorage.nicoVolumeMute))
-          localStorage.nicoVolumeMute = false;
-        switchVolumeState();
+        updateSlider(localStorage.nicoVolume);
       });
 
       $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
