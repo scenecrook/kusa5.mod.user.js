@@ -92,6 +92,7 @@ addGlobalStyle(`
 }
 .controle-panel .btn,
 input+label {
+  padding: 0;
   color: #fff;
   font-size: 18px;
   border: none;
@@ -188,6 +189,7 @@ button.btn.volume {
 }
 .controle-panel .playtime {
   line-height: 30px;
+  margin: 0 6px;
 }
 
 input.btn {
@@ -684,11 +686,12 @@ const CONTROLE_PANEL = `
   <button class="btn toggle play">▲</button>
   ${rateForm()}
   <button class="btn full r">■</button>
-  <div class="volume-slider">
+  <button class="btn comment-hidden r">💬</button>
+  <div class="volume-slider r">
     <input type="range" name="bar"  id="volume-slider" step="1" min="0" max="100" value="0" />
     <span id="volume-bar"></span>
   </div>
-  <button class="btn comment-hidden r">💬</button>
+  <button class="btn repeat r">➡️</button>
   <div class="playtime r">
     <span class="current"></span>
     /
@@ -722,6 +725,21 @@ var updatebar = function(e) {
   $('.progressBar.seek .mainbar').css('width', (ratio * 100)+'%');
   $video[0].currentTime = $video[0].duration * ratio;
   return true;
+}
+
+function updateRepeat(oninit) {
+  if(oninit) {
+    var state = localStorage.getItem('repeat');
+    if(state !== null)
+      $video.get(0).loop = state;
+  } else {
+    $video.get(0).loop = !$video.get(0).loop;
+    localStorage.repeat = $video.get(0).loop;
+  }
+  if($video.get(0).loop)
+    $('button.repeat').html(`🔁`);
+  else
+    $('button.repeat').html(`➡️`);
 }
 
 // 対応外（ニコニコムービーメーカーとか）のURLを弾く
@@ -765,12 +783,16 @@ function getMovieInfo() {
       $('#playerContainerSlideArea').attr('id', 'kusa5');
       if(OPT.showPageTop)
         $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
-      if(!OPT.autoPlay)
+      if(!OPT.autoPlay) {
         $video.removeAttr('autoplay');
+        $video.get(0).load();
+      }
         
       const kusa5 = $('#kusa5')
         .append($video)
         .append(ctrPanel());
+
+      updateRepeat(true);
 
       $('input[name=nicorate]').change(ev => {
         localStorage.nicoRate =
@@ -784,6 +806,7 @@ function getMovieInfo() {
       });
 
       $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
+      $('#kusa5 button.repeat').click(() => updateRepeat(false));
 
       var promise = loadApiInfo(launchID).then(info => {
         $video.attr('src', info.url);
