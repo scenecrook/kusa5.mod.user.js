@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     13
+// @version     14
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -31,6 +31,7 @@ const OPT = {
 const ASKURL = 'http://flapi.nicovideo.jp/api/getflv?v=';
 const THUMB = 'http://tn-skr3.smilevideo.jp/smile?i=';
 const WATCH = 'http://www.nicovideo.jp/watch/';
+const THREAD = 'http://flapi.nicovideo.jp/api/getthreadkey?thread=';
 const INFO = 'http://ext.nicovideo.jp/api/getthumbinfo/';
 const apidata = JSON.parse($('#watchAPIDataContainer').text());
 const launchID = apidata.videoDetail.v; // APIに与える識別子
@@ -553,49 +554,85 @@ function xml2chats(xml) {
 }
 
 function loadMsg(info) {
+  console.log(info);
   return $.ajax({
-    type: 'POST',
-    url: info.ms,
-    // サーバーによってCORSで弾かれたりバッドリクエスト判定されたり
-    // するので application/xmlでもなくtext/xmlでもなく
-    // この値に落ち着いた
-    contentType: "text/plain",
-    dataType: 'xml',
-    data: `<packet><thread thread="${info.thread_id}"
-      version="20061206" res_from="-5000" scores="1"/>
-      </packet>`,
+    type: 'GET',
+    url: THREAD + info.thread_id,
+    dataType: 'text',
     crossDomain: true,
     cache: false,
-  }).then(xml2chats,
-    data => console.log('メッセージロード失敗', data)
-  ).done(chats => {
-    // 時間イベントの発火で、対象メッセージがあれば流す
-    var lastT = 0;
-    // 次の動画への繊維などで複数回登録させるのでoff()
-    $video.off('timeupdate').on('timeupdate', _.throttle(ev => {
-      // chat.vpos is 1/100 sec.
-      var v = ev.target;
-      var t = Math.round(v.currentTime * 100);
-      chats.filter(ch => lastT < ch.t && ch.t < t)
-        .forEach(_.throttle(marqueeMsg, 250));
-      lastT = t;//更新
+    xhrFields: {'withCredentials': true},
+  }).then(threadinfo => {
+    var threadkey = '';
+    var force184 = '';
+    _.each(threadinfo.split('&'), info => {
+      if(info.includes('threadkey')) {
+        threadkey = info.split('=')[1];
+      } else if(info.includes('force_184')) {
+        force184 = info.split('=')[1];
+      }
+    });
+    console.log(threadkey);
+    console.log(force184);
+    var data = '';
+    if(threadkey !== '' && force184 !== ''){
+      data = `<packet><thread thread="${info.thread_id}"
+        version="20061206" res_from="-1000" scores="1" user_id="${info.user_id}"
+        threadkey="${threadkey}" force_184="${force184}" />
+        </packet>`;
+    } else if(force184 !== ''){
+      data = `<packet><thread thread="${info.thread_id}"
+        version="20061206" res_from="-1000" scores="1" user_id="${info.user_id}"
+        force_184="${force184}" />
+        </packet>`;
+    } else {
+      data = `<packet><thread thread="${info.thread_id}"
+        version="20061206" res_from="-1000" scores="1" />
+        </packet>`;
+    }
+    console.log(data);
+    $.ajax({
+      type: 'POST',
+      url: info.ms,
+      // サーバーによってCORSで弾かれたりバッドリクエスト判定されたり
+      // するので application/xmlでもなくtext/xmlでもなく
+      // この値に落ち着いた
+      contentType: "text/plain",
+      dataType: 'xml',
+      data: data,
+      crossDomain: true,
+      cache: false,
+    }).then(xml2chats,
+      data => console.log('メッセージロード失敗', data)
+    ).done(chats => {
+      // 時間イベントの発火で、対象メッセージがあれば流す
+      var lastT = 0;
+      // 次の動画への繊維などで複数回登録させるのでoff()
+      $video.off('timeupdate').on('timeupdate', _.throttle(ev => {
+        // chat.vpos is 1/100 sec.
+        var v = ev.target;
+        var t = Math.round(v.currentTime * 100);
+        chats.filter(ch => lastT < ch.t && ch.t < t)
+          .forEach(_.throttle(marqueeMsg, 250));
+        lastT = t;//更新
 
-      // ついでに動画の進捗バーを更新
-      var w = 100 * v.currentTime / v.duration; //in %
-      $('.progressBar.seek .mainbar').css('width', w+'%');
-      $('.controle-panel .current')
-        .text(UTIL.sec2HHMMSS(v.currentTime));
-      $('.controle-panel .duration')
-        .text(UTIL.sec2HHMMSS(v.duration));
-    }, 1000));
-    $video.off('progress').on('progress', _.throttle(ev => {
-      var v = ev.target;
-      if  (v.buffered.length == 0)
-        return;
-      var bufTime = v.buffered.end(v.buffered.length-1);
-      var bw = 100 * bufTime / v.duration;
-      $('.progressBar.seek .bufferbar').css('width', bw+'%');
-    }, 1000));
+        // ついでに動画の進捗バーを更新
+        var w = 100 * v.currentTime / v.duration; //in %
+        $('.progressBar.seek .mainbar').css('width', w+'%');
+        $('.controle-panel .current')
+          .text(UTIL.sec2HHMMSS(v.currentTime));
+        $('.controle-panel .duration')
+          .text(UTIL.sec2HHMMSS(v.duration));
+      }, 1000));
+      $video.off('progress').on('progress', _.throttle(ev => {
+        var v = ev.target;
+        if  (v.buffered.length == 0)
+          return;
+        var bufTime = v.buffered.end(v.buffered.length-1);
+        var bw = 100 * bufTime / v.duration;
+        $('.progressBar.seek .bufferbar').css('width', bw+'%');
+      }, 1000));
+    })
   });
 }
 
