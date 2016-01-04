@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     12
+// @version     13
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -36,6 +36,14 @@ const apidata = JSON.parse($('#watchAPIDataContainer').text());
 const launchID = apidata.videoDetail.v; // APIに与える識別子
 const isIframe = window != parent;
 
+function generateLines(height, lines) {
+  var result = '';
+  for (var i = 0; i < lines; i++) {
+    result += '#kusa5 .msg.l'+ (i + 1) +' { top: calc((' + height + 'px / '+ lines +') * '+ i +'); }\n';
+  }
+  return result;
+}
+
 addGlobalStyle(`
 * {
   min-width: auto !important;
@@ -45,8 +53,6 @@ addGlobalStyle(`
   position: relative;
   /*background-color: hsla(180, 10%, 0%, 0.8);*/
   background-color: #000;
-  width: 640px;
-  height: 420px;
   overflow: hidden;
   margin: 0 auto;
 }
@@ -69,6 +75,7 @@ addGlobalStyle(`
  コントロールパネル関係
  ******************************************************************************/
 .controle-panel {
+  z-index: 9999;
   color: #fff;
   text-shadow: 2px 1px #000;
   position:absolute;
@@ -223,7 +230,6 @@ div.ratepanel {
   z-index: 999;
   display: inline-block;
   word-break: keep-all;
-  font-size: 1.75em;
   font-family: "Arial", "sans-serif"; /* 確か元のFlashプレーヤーはArial指定になっていたはず　要するにブラウザ任せ */
   color: white;
   padding: 0 .5em;
@@ -232,18 +238,10 @@ div.ratepanel {
   transition-timing-function: linear;
   transition-property: transform;
   transform: translate3d(105% ,0,0); /* 画面外に配置するので */
+  text-align: center;
   text-shadow: 1px 2px 0px #000;
   top: 0;
 } 
-#kusa5 .msg.l1 { top: calc(1.4em * 0);}
-#kusa5 .msg.l2 { top: calc(1.4em * 1);}
-#kusa5 .msg.l3 { top: calc(1.4em * 2);}
-#kusa5 .msg.l4 { top: calc(1.4em * 3);}
-#kusa5 .msg.l5 { top: calc(1.4em * 4);}
-#kusa5 .msg.l6 { top: calc(1.4em * 5);}
-#kusa5 .msg.l7 { top: calc(1.4em * 6);}
-#kusa5 .msg.l8 { top: calc(1.4em * 7);}
-#kusa5 .msg.l9 { top: calc(1.4em * 8);}
 
 /* 非表示状態 */
 #kusa5.comment-hidden .msg { opacity: 0;}
@@ -270,7 +268,23 @@ button.comment-hidden {
 #kusa5 {
   width: 640px !important;
   height: 360px !important;
-}    
+}
+#kusa5 .msg {
+  font-size: calc(360px / 14);
+  height: calc(360px / 14);
+  line-height: ` + (360 / 14) + `px;
+}
+#kusa5 .msg.small {
+  font-size: calc(360px / 21);
+  height: calc(360px / 21);
+  line-height: ` + (360 / 21) + `px;
+}
+#kusa5 .msg.big {
+  font-size: calc(360px / 7);
+  height: calc(360px / 7);
+  line-height: ` + (360 / 7) + `px;
+}
+` + generateLines(360, 21) + `
 
 @media screen and (min-width: 820px) {
   #kusa5 {
@@ -278,8 +292,21 @@ button.comment-hidden {
     height: 450px !important;
   }
   #kusa5 .msg {
-    font-size: 2.2em; 
+    font-size: calc(450px / 14);
+    height: calc(450px / 14);
+    line-height: ` + (450 / 14) + `px;
   }
+  #kusa5 .msg.small {
+    font-size: calc(450px / 21);
+    height: calc(450px / 21);
+    line-height: ` + (450 / 21) + `px;
+  }
+  #kusa5 .msg.big {
+    font-size: calc(450px / 7);
+    height: calc(450px / 7);
+    line-height: ` + (450 / 7) + `px;
+  }
+  ` + generateLines(450, 21) + `
 }
 
 @media screen and (min-width: 980px) {
@@ -288,8 +315,21 @@ button.comment-hidden {
     height: 540px !important;
   }
   #kusa5 .msg {
-    font-size: 2.5em; 
+    font-size: calc(540px / 14);
+    height: calc(540px / 14);
+    line-height: ` + (540 / 14) + `px;
   }
+  #kusa5 .msg.small {
+    font-size: calc(540px / 21);
+    height: calc(540px / 21);
+    line-height: ` + (540 / 21) + `px;
+  }
+  #kusa5 .msg.big {
+    font-size: calc(540px / 7);
+    height: calc(540px / 7);
+    line-height: ` + (540 / 7) + `px;
+  }
+  ` + generateLines(540, 21) + `
 }
 
 @media screen and (min-width: 1300px) {
@@ -298,8 +338,17 @@ button.comment-hidden {
     height: 720px !important;
   }
   #kusa5 .msg {
-    font-size: 3em; 
+    font-size: calc(720px / 14);
+    height: calc(720px / 14);
+    line-height: ` + (720 / 14) + `px;
   }
+  #kusa5 .msg.small {
+    font-size: calc(720px / 21);
+  }
+  #kusa5 .msg.big {
+    font-size: calc(720px / 7);
+  }
+  ` + generateLines(720, 21) + `
 }
 
 #kusa5 video {
@@ -399,6 +448,23 @@ function getNextId() {
   return parseInt(m && m[1] || -1);
 
 }
+
+const FullScreen = {};
+FullScreen.isOpen = () =>
+  document.mozFullScreen || document.webkitIsFullScreen ||
+  (document.fullScreenElement && document.fullScreenElement !== null);
+FullScreen.req = (e) =>
+  !!e.mozRequestFullScreen && e.mozRequestFullScreen() ||
+  !!e.requestFullScreen && e.requestFullScreen() ||
+  !!e.webkitRequestFullScreen && e.webkitRequestFullScreen();
+FullScreen.cancel = () =>
+  !!document.mozCancelFullScreen && document.mozCancelFullScreen() ||
+  !!document.cancelFullScreen && document.cancelFullScreen() ||
+  !!document.webkitCancelFullScreen && document.webkitCancelFullScreen();
+FullScreen.toggle = () =>
+  FullScreen.isOpen() ?
+    FullScreen.cancel() :
+    FullScreen.req($('#kusa5')[0]);
 
 /**
  * ページの遷移処理。実際にはコンテンツを入れ替えるだけで
@@ -580,25 +646,49 @@ const colortable = {
   black2:  '#666666',
 }
 
+const sizetable = {
+  small: 'small',
+  medium: 'medium',
+  big: 'big',
+}
+
+const msgsizetable = {
+  small: 1,
+  medium: 2,
+  big: 3,
+}
+
+const msgpostable = {
+  ue: 1,
+  naka: 2,
+  shita: 3,
+}
+
 function marqueeMsg(ch) {
   const baseW = $('#kusa5').width() + 10;
-  const hasMsg = $('#kusa5 .msg').size() > 0;
-
-  $m = $('<span class="msg"/>');
+  //const hasMsg = $('#kusa5 .msg').size() > 0;
+  
+  var msgSize = 2;
+  
+  $m = $('<div class="msg"/>');
   $m.text(ch.c);
   $m.html($m.text().replace(/\n/, '<br>'));
   $m.css('transform', `translate3d(${baseW}px, 0, 0)`);
-  $video.after($m);
-  
-  _.some(ch.m.split(' '), color => {
-    if (color in colortable) {
-      $m.css('color', colortable[color]);
-      return true;
-    } else if (color[0] === '#') {
-      $m.css('color', color);
-      return true;
+  _.each(ch.m.split(' '), command => {
+    if (command in colortable) {
+      $m.css('color', colortable[command]);
+    } else if (command[0] === '#') {
+      $m.css('color', command);
+    }
+    if (command in sizetable) {
+      msgSize = msgsizetable[command];
+      $m.addClass(command);
+    }
+    if(command === 'invisible') {
+      $m.hide();
     }
   });
+  $video.after($m);
   
   function hasRightSpace(l) {
     // 一番右端にあるmsgの右端の位置
@@ -610,18 +700,44 @@ function marqueeMsg(ch) {
     // transition速度(つまりアニメーション再生時間)と関係
     return rigthSpace > $m.width() * 0.45;
   }
-
-  const line = !hasMsg || hasRightSpace('.l1') ? 'l1' :
-    hasRightSpace('.l2') ? 'l2' :
-    hasRightSpace('.l3') ? 'l3' :
-    hasRightSpace('.l4') ? 'l4' :
-    hasRightSpace('.l5') ? 'l5' :
-    hasRightSpace('.l6') ? 'l6' :
-    hasRightSpace('.l7') ? 'l7' :
-    hasRightSpace('.l8') ? 'l8' :
-    'l9';
-
-  $m.addClass(line);
+  
+  var line = (() => {
+    if(msgSize === 1) {
+      for (var i = 1; i <= 21; i+=msgSize) {
+        if (hasRightSpace('.l' + i)) {
+          switch (msgSize) {
+            case 1:
+              return i;
+            case 2:
+              if (hasRightSpace('.l' + i)) return i;
+              break;
+            case 3:
+              if (hasRightSpace('.l' + i) && hasRightSpace('.l' + (i + 1))) return i;
+              break;
+          }
+        }
+      }
+      return 1;
+    } else {
+      for (var i = 1; i < 21; i+=msgSize) {
+        if (hasRightSpace('.l' + i)) {
+          switch (msgSize) {
+            case 1:
+              return i;
+            case 2:
+              if (hasRightSpace('.l' + (i + 1))) return i;
+              break;
+            case 3:
+              if (hasRightSpace('.l' + (i + 1)) && hasRightSpace('.l' + (i + 2))) return i;
+              break;
+          }
+        }
+      }
+      return 1;
+    }
+  })();
+  
+  $m.addClass('l' + line);
   //オーバーシュート
   $m.css('transform', `translate3d(-${$m.width() + 10}px, 0, 0)`);
   //アニメ停止で自動削除
@@ -640,23 +756,6 @@ UTIL.sec2HHMMSS = function (sec) {
     if (seconds < 10) {seconds = "0"+seconds;}
     return (hours > 0? hours+':' :'') + minutes+':'+seconds;
 };
-
-const FullScreen = {};
-FullScreen.isOpen = () =>
-  document.mozFullScreen || document.webkitIsFullScreen ||
-  (document.fullScreenElement && document.fullScreenElement !== null);
-FullScreen.req = (e) =>
-  !!e.mozRequestFullScreen && e.mozRequestFullScreen() ||
-  !!e.requestFullScreen && e.requestFullScreen() ||
-  !!e.webkitRequestFullScreen && e.webkitRequestFullScreen();
-FullScreen.cancel = () =>
-  !!document.mozCancelFullScreen && document.mozCancelFullScreen() ||
-  !!document.cancelFullScreen && document.cancelFullScreen() ||
-  !!document.webkitCancelFullScreen && document.webkitCancelFullScreen();
-FullScreen.toggle = () =>
-  FullScreen.isOpen() ?
-    FullScreen.cancel() :
-    FullScreen.req($('#kusa5')[0]);
 
 function rateForm() {
 
