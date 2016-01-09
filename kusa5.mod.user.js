@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     15
+// @version     16
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -37,16 +37,29 @@ const INFO = 'http://ext.nicovideo.jp/api/getthumbinfo/';
 const apidata = JSON.parse($('#watchAPIDataContainer').text());
 const launchID = apidata.videoDetail.v; // APIに与える識別子
 const isIframe = window != parent;
+const commentLines = 21;
+const smallVirtualLines = commentLines;
+const mediumVirtualLines = (commentLines / 3) * 2;
+const largeVirtualLines = commentLines / 3;
 
 var isPremium = false;
+var allocatedLine = [];
+
+var lalloc = function (l) {
+  allocatedLine[l] += 1;
+};
+
+var lfree = function (l) {
+  allocatedLine[l] -= 1;
+}
 
 function generateLines(height, lines) {
   var result = '';
-  for (var i = 0; i < lines; i++) {
-    result += '#kusa5 .msg.l'+ (i + 1) +' { top: calc((' + height + 'px / '+ lines +') * '+ i +'); }\n';
+  for (var i = lines; i > 0; i--) {
+    result += '#kusa5 .msg.l'+ i +' { top: calc((' + height + 'px / '+ lines +') * '+ (i - 1) +'); }\n';
   }
   return result;
-}
+};
 
 addGlobalStyle(`
 * {
@@ -60,6 +73,18 @@ addGlobalStyle(`
   overflow: hidden;
   margin: 0 auto;
 }
+
+#kusa5_debug {
+  z-index: 9998;
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  min-width: 180px !important;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+}
+
 #kusa5 video {
   display: block;
   background-color: #000;
@@ -274,21 +299,21 @@ button.comment-hidden {
   height: 360px !important;
 }
 #kusa5 .msg {
-  font-size: calc(360px / 14);
-  height: calc(360px / 14);
-  line-height: ` + (360 / 14) + `px;
+  font-size: calc(360px / `+ mediumVirtualLines +`);
+  height: calc(360px / `+ mediumVirtualLines +`);
+  line-height: ` + (360 / mediumVirtualLines) + `px;
 }
 #kusa5 .msg.small {
-  font-size: calc(360px / 21);
-  height: calc(360px / 21);
-  line-height: ` + (360 / 21) + `px;
+  font-size: calc(360px / `+ smallVirtualLines +`);
+  height: calc(360px / `+ smallVirtualLines +`);
+  line-height: ` + (360 / smallVirtualLines) + `px;
 }
 #kusa5 .msg.big {
-  font-size: calc(360px / 7);
-  height: calc(360px / 7);
-  line-height: ` + (360 / 7) + `px;
+  font-size: calc(360px / `+ largeVirtualLines +`);
+  height: calc(360px / `+ largeVirtualLines +`);
+  line-height: ` + (360 / largeVirtualLines) + `px;
 }
-` + generateLines(360, 21) + `
+` + generateLines(360, commentLines) + `
 
 @media screen and (min-width: 820px) {
   #kusa5 {
@@ -296,21 +321,21 @@ button.comment-hidden {
     height: 450px !important;
   }
   #kusa5 .msg {
-    font-size: calc(450px / 14);
-    height: calc(450px / 14);
-    line-height: ` + (450 / 14) + `px;
+    font-size: calc(450px / `+ mediumVirtualLines +`);
+    height: calc(450px / `+ mediumVirtualLines +`);
+    line-height: ` + (450 / mediumVirtualLines) + `px;
   }
   #kusa5 .msg.small {
-    font-size: calc(450px / 21);
-    height: calc(450px / 21);
-    line-height: ` + (450 / 21) + `px;
+    font-size: calc(450px / `+ smallVirtualLines +`);
+    height: calc(450px / `+ smallVirtualLines +`);
+    line-height: ` + (450 / smallVirtualLines) + `px;
   }
   #kusa5 .msg.big {
-    font-size: calc(450px / 7);
-    height: calc(450px / 7);
-    line-height: ` + (450 / 7) + `px;
+    font-size: calc(450px / `+ largeVirtualLines +`);
+    height: calc(450px / `+ largeVirtualLines +`);
+    line-height: ` + (450 / largeVirtualLines) + `px;
   }
-  ` + generateLines(450, 21) + `
+  ` + generateLines(450, commentLines) + `
 }
 
 @media screen and (min-width: 980px) {
@@ -319,21 +344,21 @@ button.comment-hidden {
     height: 540px !important;
   }
   #kusa5 .msg {
-    font-size: calc(540px / 14);
-    height: calc(540px / 14);
-    line-height: ` + (540 / 14) + `px;
+    font-size: calc(540px / `+ mediumVirtualLines +`);
+    height: calc(540px / `+ mediumVirtualLines +`);
+    line-height: ` + (540 / mediumVirtualLines) + `px;
   }
   #kusa5 .msg.small {
-    font-size: calc(540px / 21);
-    height: calc(540px / 21);
-    line-height: ` + (540 / 21) + `px;
+    font-size: calc(540px / `+ smallVirtualLines +`);
+    height: calc(540px / `+ smallVirtualLines +`);
+    line-height: ` + (540 / smallVirtualLines) + `px;
   }
   #kusa5 .msg.big {
-    font-size: calc(540px / 7);
-    height: calc(540px / 7);
-    line-height: ` + (540 / 7) + `px;
+    font-size: calc(540px / `+ largeVirtualLines +`);
+    height: calc(540px / `+ largeVirtualLines +`);
+    line-height: ` + (540 / largeVirtualLines) + `px;
   }
-  ` + generateLines(540, 21) + `
+  ` + generateLines(540, commentLines) + `
 }
 
 @media screen and (min-width: 1300px) {
@@ -342,17 +367,21 @@ button.comment-hidden {
     height: 720px !important;
   }
   #kusa5 .msg {
-    font-size: calc(720px / 14);
-    height: calc(720px / 14);
-    line-height: ` + (720 / 14) + `px;
+    font-size: calc(720px / `+ mediumVirtualLines +`);
+    height: calc(720px / `+ mediumVirtualLines +`);
+    line-height: ` + (720 / mediumVirtualLines) + `px;
   }
   #kusa5 .msg.small {
-    font-size: calc(720px / 21);
+    font-size: calc(720px / `+ smallVirtualLines +`);
+    height: calc(720px / `+ smallVirtualLines +`);
+    line-height: ` + (720 / smallVirtualLines) + `px;
   }
   #kusa5 .msg.big {
-    font-size: calc(720px / 7);
+    font-size: calc(720px / `+ largeVirtualLines +`);
+    height: calc(720px / `+ largeVirtualLines +`);
+    line-height: ` + (720 / largeVirtualLines) + `px;
   }
-  ` + generateLines(720, 21) + `
+  ` + generateLines(720, commentLines) + `
 }
 
 #kusa5 video {
@@ -740,46 +769,43 @@ function marqueeMsg(ch) {
   }
   
   var line = (() => {
-    if(msgSize === 1) {
-      for (var i = 1; i <= 21; i+=msgSize) {
-        if (hasRightSpace('.l' + i)) {
-          switch (msgSize) {
-            case 1:
-              return i;
-            case 2:
-              if (hasRightSpace('.l' + i)) return i;
-              break;
-            case 3:
-              if (hasRightSpace('.l' + i) && hasRightSpace('.l' + (i + 1))) return i;
-              break;
-          }
-        }
+    for (var i = 1; i <= 21 - msgSize; i++) {
+      if (hasRightSpace('.l' + i)) {
+        return i;
       }
-      return 1;
-    } else {
-      for (var i = 1; i < 21; i+=msgSize) {
-        if (hasRightSpace('.l' + i)) {
-          switch (msgSize) {
-            case 1:
-              return i;
-            case 2:
-              if (hasRightSpace('.l' + (i + 1))) return i;
-              break;
-            case 3:
-              if (hasRightSpace('.l' + (i + 1)) && hasRightSpace('.l' + (i + 2))) return i;
-              break;
-          }
-        }
-      }
-      return 1;
     }
+    var index = 0;
+    var value = Math.max.apply(null, allocatedLine);
+    for (var i = 0; i <= allocatedLine.length - msgSize; i++) {
+      if (allocatedLine[i] < value) {
+        value = allocatedLine[i];
+        index = i;
+      }
+    }
+    return index + 1;
   })();
   
-  $m.addClass('l' + line);
+  for (var i = line; i < line + msgSize; i++) {
+    lalloc(i - 1);
+    $m.addClass('l' + i);
+  }
   //オーバーシュート
   $m.css('transform', `translate3d(-${$m.width() + 10}px, 0, 0)`);
   //アニメ停止で自動削除
-  $m.on('transitionend', ev => $(ev.target).remove());
+  $m.on('transitionend', ev => {
+    $(ev.target).remove();
+    for (var i = line; i < line + msgSize; i++) {
+      lfree(i - 1);
+    }
+  });
+  
+  if (OPT.debug) {
+    var log = '';
+    for (var i = 0; i < allocatedLine.length; i++) {
+      log += '.l' + (i + 1) + ': ' + allocatedLine[i] + '<br>';
+    }
+    $('#kusa5_lallocInfo').html(log);
+  }
 }
 
 var UTIL = {};
@@ -905,7 +931,11 @@ function getMovieInfo() {
 }
 
 /** main というかエントリーポイント */
-;(function () {
+; (function () {
+  for (var i = 0; i < commentLines; i++){
+    allocatedLine[i] = 0;
+  }
+  
   getMovieInfo().then(xml => {
     var isMP4 = false;
     $(xml).find('movie_type').each(function (type) {
@@ -933,6 +963,12 @@ function getMovieInfo() {
       const kusa5 = $('#kusa5')
         .append($video)
         .append(ctrPanel());
+
+      if (OPT.debug) {
+        $('#kusa5').append('<div id="kusa5_debug" />');
+        $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
+        $('#kusa5_debug').append('<div id="kusa5_lallocInfo" />');
+      }
 
       updateRepeat(true);
 
