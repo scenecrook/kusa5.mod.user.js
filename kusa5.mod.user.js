@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     14
+// @version     15
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
