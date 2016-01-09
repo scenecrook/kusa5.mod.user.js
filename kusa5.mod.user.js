@@ -25,6 +25,7 @@ const OPT = {
   hidePlaylist: false,    // 再生リストを非表示にする
   showPageTop: false,     // HTML5プレーヤーをページの上部に配置する　Flashプレーヤーには影響なし
   useBuffer: false,       // たぶんFirefoxじゃないと正常に動かない
+  playerFPS: 2,           // プレイヤーのシークバーとか再生位置の更新フレームレート
   debug: false
 };
 
@@ -36,6 +37,8 @@ const INFO = 'http://ext.nicovideo.jp/api/getthumbinfo/';
 const apidata = JSON.parse($('#watchAPIDataContainer').text());
 const launchID = apidata.videoDetail.v; // APIに与える識別子
 const isIframe = window != parent;
+
+var isPremium = false;
 
 function generateLines(height, lines) {
   var result = '';
@@ -554,7 +557,6 @@ function xml2chats(xml) {
 }
 
 function loadMsg(info) {
-  console.log(info);
   return $.ajax({
     type: 'GET',
     url: THREAD + info.thread_id,
@@ -572,8 +574,7 @@ function loadMsg(info) {
         force184 = info.split('=')[1];
       }
     });
-    console.log(threadkey);
-    console.log(force184);
+    
     var data = '';
     if(threadkey !== '' && force184 !== ''){
       data = `<packet><thread thread="${info.thread_id}"
@@ -590,7 +591,9 @@ function loadMsg(info) {
         version="20061206" res_from="-1000" scores="1" />
         </packet>`;
     }
-    console.log(data);
+
+    var updateInterval = 1000 / OPT.playerFPS;
+    
     $.ajax({
       type: 'POST',
       url: info.ms,
@@ -623,15 +626,13 @@ function loadMsg(info) {
           .text(UTIL.sec2HHMMSS(v.currentTime));
         $('.controle-panel .duration')
           .text(UTIL.sec2HHMMSS(v.duration));
-      }, 1000));
-      $video.off('progress').on('progress', _.throttle(ev => {
-        var v = ev.target;
+        
         if  (v.buffered.length == 0)
           return;
         var bufTime = v.buffered.end(v.buffered.length-1);
         var bw = 100 * bufTime / v.duration;
         $('.progressBar.seek .bufferbar').css('width', bw+'%');
-      }, 1000));
+      }, updateInterval));
     })
   });
 }
@@ -854,11 +855,16 @@ function updateSlider(volume) {
 
 //update Progress Bar control
 var updatebar = function(e) {
-  var bar = $('.progressBar.seek');
-  var offset = e.pageX - bar.offset().left; //Click pos
-  var ratio = Math.min(1, Math.max(0, offset / bar.width()));
+  var mainBar = $('.progressBar.seek .mainbar');
+  var seekBar = $('.progressBar.seek');
+  var buffBar = $('.progressBar.seek .bufferbar');
+  var offset = e.pageX - seekBar.offset().left; //Click pos
+  if (!(isPremium || OPT.noLimit) && (offset > buffBar.width())) {
+    offset = buffBar.width();
+  }
+  var ratio = Math.min(1, Math.max(0, offset / seekBar.width()));
   //Update bar and video currenttime
-  $('.progressBar.seek .mainbar').css('width', (ratio * 100)+'%');
+  mainBar.css('width', (ratio * 100)+'%');
   $video[0].currentTime = $video[0].duration * ratio;
   return true;
 }
@@ -953,22 +959,7 @@ function getMovieInfo() {
       if (isIframe)
         return; // 以降はフォワードページのみの処理
 
-      var attachSeekEvent = function() {
-        var timeDrag = false;  /* Drag status */
-        $('.progressBar.seek').mousedown(function(e) {
-          timeDrag = true;
-          updatebar(e);
-        });
-        $('.progressBar').mouseup(function(e) {
-          if(!timeDrag)
-            return;
-          timeDrag = false;
-          updatebar(e.pageX);
-        }).mousemove(e=> timeDrag && updatebar(e));
-      };
-      
       // プレミアム会員かどうか
-      var isPremium = false;
       if($('#siteHeaderNotificationPremium').is(':hidden')){
         isPremium = true;
       }
@@ -977,7 +968,7 @@ function getMovieInfo() {
           // ニコニコ側のJSの反映が遅いときにうまく判定できないため
           var mo = new MutationObserver(function(){
             if($('#siteHeaderNotificationPremium').is(':hidden')){
-              attachSeekEvent();
+              isPremium = true;
             }
           });
           var siteHeaderNotification = document.getElementById("siteHeaderNotification")
@@ -986,9 +977,17 @@ function getMovieInfo() {
         }
       }
       
-      if (isPremium || OPT.noLimit) {
-        attachSeekEvent();
-      }
+      var timeDrag = false;  /* Drag status */
+      $('.progressBar.seek').mousedown(function(e) {
+        timeDrag = true;
+        updatebar(e);
+      });
+      $('.progressBar').mouseup(function(e) {
+        if(!timeDrag)
+          return;
+        timeDrag = false;
+        updatebar(e.pageX);
+      }).mousemove(e=> timeDrag && updatebar(e));
       
       // ボタン押された時の動作登録
       var keyTbl = [];
