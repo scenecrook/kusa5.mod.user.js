@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     19
+// @version     20
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -161,6 +161,30 @@
     max-width: 100%; /* 画面外にはみ出ないように */
     margin: 0 auto;
   }
+  
+  #kusa5 #kusa5_playbutton {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    z-index: 9998;
+    width: 100%;
+    height: 100%;
+    margin-left: -8rem;
+    margin-top: -4rem;
+    padding: 1rem 6rem;
+    font-size: 4rem;
+    background: rgba(0, 0, 0, 0.8);
+    border: white 2px solid;
+    color: white;
+    width: auto;
+    height: auto;
+    cursor: pointer;
+  }
+  #kusa5 #kusa5_playbutton > div {
+    transform: rotate(90deg);
+    cursor: pointer;
+  }
+  
   #wallImageContainer .wallImageCenteringArea .wallAlignmentArea.image2{
     z-index: 3;
     background-color: #272727;
@@ -1097,13 +1121,17 @@
     updateallocatedLine();
     
     getMovieInfo().then(xml => {
-      var isMP4 = false;
+      var pack = [];
+      pack[0] = xml;
       $(xml).find('movie_type').each(function (type) {
-        isMP4 = ($(this).text() === 'mp4');
+        pack[1] = ($(this).text() === 'mp4');
       });
-      return isMP4;
-    })
-    .then(isMP4 => {
+      $(xml).find('thumbnail_url').each(function (type) {
+        pack[2] = $(this).text();
+      });
+      return pack;
+    }).then(pack => {
+      var isMP4 = pack[1];
       if (!isMP4) {
         $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応)</p>')
         return;
@@ -1115,8 +1143,15 @@
         $('#playerContainerSlideArea').attr('id', 'kusa5');
         if(OPT.showPageTop)
           $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
-        if(!OPT.autoPlay) {
+        if (!OPT.autoPlay) {
           $video.removeAttr('autoplay');
+          $video.attr({ poster: pack[2] });
+          var $playButton = $('<div id="kusa5_playbutton"><div>▲</div></div>');
+          $playButton.on('click', () => {
+            $video.get(0).play();
+            $('#kusa5_playbutton').remove();
+          });
+          $('#kusa5').append($playButton);
           $video.get(0).load();
         }
           
