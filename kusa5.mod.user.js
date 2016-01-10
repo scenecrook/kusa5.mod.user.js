@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     17
+// @version     18
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -50,12 +50,37 @@
 
   var isPremium = false;
   var allocatedLine = [];
+  var allocatedUeLine = [];
+  var allocatedShitaLine = [];
 
-  var updateAllocatedLine = (() => {
+  var updateallocatedLine = (() => {
     if (OPT.debug) {
+      var normalizeNum = (n => {
+        return UTIL.paddingRight(n, ' ', 2);
+      });
       var log = '';
-      for (var i = 0; i < allocatedLine.length; i++) {
-        log += '.l' + (i + 1) + ': ' + allocatedLine[i] + '<br>';
+      log += 'all\n';
+      for (var i = 0; i < commentLines / 3; i++) {
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 1) + ': ' + allocatedLine[i], ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 8) + ': ' + allocatedLine[i + 7], ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 15) + ': ' + allocatedLine[i + 14], ' ', 9);
+        log += '\n';
+      }
+      
+      log += 'ue\n';
+      for (var i = 0; i < commentLines / 3; i++) {
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 1) + ': ' + allocatedUeLine[i], ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 8) + ': ' + allocatedUeLine[i + 7], ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 15) + ': ' + allocatedUeLine[i + 14], ' ', 9);
+        log += '\n';
+      }
+      
+      log += 'shita\n';
+      for (var i = 0; i < commentLines / 3; i++) {
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 1) + ': ' + allocatedShitaLine[i], ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 8) + ': ' + allocatedShitaLine[i + 7], ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 15) + ': ' + allocatedShitaLine[i + 14], ' ', 9);
+        log += '\n';
       }
       $('#kusa5_lallocInfo').html(log);
     }
@@ -63,13 +88,30 @@
 
   var lalloc = function (l) {
     allocatedLine[l] += 1;
-    updateAllocatedLine();
+    updateallocatedLine();
   };
-
   var lfree = function (l) {
     allocatedLine[l] -= 1;
-    updateAllocatedLine();
-  }
+    updateallocatedLine();
+  };
+  
+  var ulalloc = function (l) {
+    allocatedUeLine[l] += 1;
+    updateallocatedLine();
+  };
+  var ulfree = function (l) {
+    allocatedUeLine[l] -= 1;
+    updateallocatedLine();
+  };
+  
+  var slalloc = function (l) {
+    allocatedShitaLine[l] += 1;
+    updateallocatedLine();
+  };
+  var slfree = function (l) {
+    allocatedShitaLine[l] -= 1;
+    updateallocatedLine();
+  };
 
   function generateLines(height, lines) {
     var result = '';
@@ -281,14 +323,19 @@
     color: white;
     padding: 0 .5em;
     position: absolute;
-    transition-duration: 6s;
+    transition-duration: 8s;
     transition-timing-function: linear;
     transition-property: transform;
-    transform: translate3d(105% ,0,0); /* 画面外に配置するので */
     text-align: center;
     text-shadow: 1px 2px 0px #000;
     top: 0;
   } 
+  
+  #kusa5 .ue,
+  #kusa5 .shita
+  {
+    left: 50% !important;
+  }
 
   /* 非表示状態 */
   #kusa5.comment-hidden .msg { opacity: 0;}
@@ -744,22 +791,22 @@
     big: 3,
   }
 
-  const msgpostable = {
-    ue: 1,
-    naka: 2,
-    shita: 3,
+  const postable = {
+    ue: 'ue',
+    naka: 'naka',
+    shita: 'shita',
   }
 
   function marqueeMsg(ch) {
     const baseW = $('#kusa5').width() + 10;
     //const hasMsg = $('#kusa5 .msg').size() > 0;
     
-    var msgSize = 2;
+    var msgSize = msgsizetable.medium;
+    var msgPos = postable.naka;
     
     $m = $('<div class="msg"/>');
     $m.text(ch.c);
     $m.html($m.text().replace(/\n/, '<br>'));
-    $m.css('transform', `translate3d(${baseW}px, 0, 0)`);
     _.each(ch.m.split(' '), command => {
       if (command in colortable) {
         $m.css('color', colortable[command]);
@@ -770,11 +817,20 @@
         msgSize = msgsizetable[command];
         $m.addClass(command);
       }
+      if (command in postable) {
+        msgPos = postable[command];
+        $m.addClass(command);
+      }
       if(command === 'invisible') {
         $m.hide();
       }
     });
     $video.after($m);
+    
+    if (msgPos === postable.naka) {
+      // 流すコメントは右画面外にセット
+      $m.css('right', `-${$m.width() + 10}px`);
+    }
     
     function hasRightSpace(l) {
       // 一番右端にあるmsgの右端の位置
@@ -788,34 +844,108 @@
     }
     
     var line = (() => {
-      for (var i = 1; i <= 21 - msgSize; i++) {
-        if (hasRightSpace('.l' + i)) {
-          return i;
-        }
+      switch (msgPos) {
+        case postable.ue:
+          return (() => {
+            var index = 0;
+            var value = Math.max.apply(null, allocatedUeLine);
+            for (var i = 0; i <= allocatedUeLine.length - msgSize; i++) {
+              if (allocatedUeLine[i] < value) {
+                value = allocatedUeLine[i];
+                index = i;
+              }
+            }
+            return index + 1;
+          })();
+        case postable.naka:
+          return (() => {
+            for (var i = 1; i <= 21 - msgSize; i++) {
+              if (hasRightSpace('.l' + i)) {
+                return i;
+              }
+            }
+            var index = 0;
+            var value = Math.max.apply(null, allocatedLine);
+            for (var i = 0; i <= allocatedLine.length - msgSize; i++) {
+              if (allocatedLine[i] < value) {
+                value = allocatedLine[i];
+                index = i;
+              }
+            }
+            return index + 1;
+          })();
+        case postable.shita:
+          return (() => {
+            var index = 0;
+            var value = Math.max.apply(null, allocatedShitaLine);
+            if (value === 0) {
+              return allocatedShitaLine.length - msgSize + 1;
+            }
+            for (var i = 0; i <= allocatedShitaLine.length - msgSize; i++) {
+              if (allocatedShitaLine[i] <= value) {
+                var check = (() => {
+                  for (var j = i; j < i + msgSize; j++) {
+                    if (allocatedShitaLine[j] > allocatedShitaLine[i]) {
+                      i = j;
+                      return false;
+                    }
+                  }
+                  return true;
+                });
+                
+                if (check()) {
+                  value = allocatedShitaLine[i];
+                  index = i;
+                }
+              }
+            }
+            return index + 1;
+          })();
       }
-      var index = 0;
-      var value = Math.max.apply(null, allocatedLine);
-      for (var i = 0; i <= allocatedLine.length - msgSize; i++) {
-        if (allocatedLine[i] < value) {
-          value = allocatedLine[i];
-          index = i;
-        }
-      }
-      return index + 1;
     })();
     
+    // alloc
     for (var i = line; i < line + msgSize; i++) {
       lalloc(i - 1);
+      if (msgPos === postable.ue) {
+        ulalloc(i - 1);
+      }
+      if (msgPos === postable.shita) {
+        slalloc(i - 1);
+      }
       $m.addClass('l' + i);
     }
-    //オーバーシュート
-    $m.css('transform', `translate3d(-${$m.width() + 10}px, 0, 0)`);
+    
+    // free
+    var free = (() => {
+      for (var i = line; i < line + msgSize; i++) {
+        lfree(i - 1);
+        if (msgPos === postable.ue) {
+          ulfree(i - 1);
+        }
+        if (msgPos === postable.shita) {
+          slfree(i - 1);
+        }
+      }
+    });
+    
+    if (msgPos === postable.naka) {
+      //オーバーシュート
+      $m.css('transform', `translate3d(-${baseW + $m.width()*2 + 10}px, 0, 0)`);
+    } else {
+      // 静止
+      $m.css('transform', `translate3d(0, 0, 0)`)
+        .css('padding', 0)
+        .css('margin-left', `-${$m.width() / 2}px`);
+      setTimeout(msg => {
+        msg.remove();
+        free();
+      }, 5000, $m);
+    }
     //アニメ停止で自動削除
     $m.on('transitionend', ev => {
       $(ev.target).remove();
-      for (var i = line; i < line + msgSize; i++) {
-        lfree(i - 1);
-      }
+      free();
     });
   }
 
@@ -830,6 +960,11 @@
       if (minutes < 10) {minutes = "0"+minutes;}
       if (seconds < 10) {seconds = "0"+seconds;}
       return (hours > 0? hours+':' :'') + minutes+':'+seconds;
+  };
+  UTIL.paddingRight = function (value, char, n) {
+    value += '';
+    for (; value.length < n; value += char);
+    return value;
   };
 
   function rateForm() {
@@ -945,8 +1080,10 @@
   window.addEventListener('load', function () {
     for (var i = 0; i < commentLines; i++){
       allocatedLine[i] = 0;
+      allocatedUeLine[i] = 0;
+      allocatedShitaLine[i] = 0;
     }
-    updateAllocatedLine();
+    updateallocatedLine();
     
     getMovieInfo().then(xml => {
       var isMP4 = false;
@@ -977,9 +1114,9 @@
           .append(ctrPanel());
 
         if (OPT.debug) {
-          $('#kusa5').append('<div id="kusa5_debug" />');
+          $('#kusa5').append('<div id="kusa5_debug" style="font-family: monospace;" />');
           $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
-          $('#kusa5_debug').append('<div id="kusa5_lallocInfo" />');
+          $('#kusa5_debug').append('<pre id="kusa5_lallocInfo" />');
         }
 
         updateRepeat(true);
