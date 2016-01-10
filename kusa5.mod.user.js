@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     18
+// @version     19
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -139,10 +139,19 @@
     position: absolute;
     top: 0;
     left: 0;
-    height: 100%;
+    height: 1.666em;
     min-width: 180px !important;
     background-color: rgba(0, 0, 0, 0.8);
     color: white;
+    overflow: hidden;
+    transition: all 0.3s ease-out; 
+    opacity: 0.3;
+  }
+  
+  #kusa5_debug:hover {
+    height: 100%;
+    opacity: 1;
+    transition: all 0.3s ease-out; 
   }
 
   #kusa5 video {
@@ -319,6 +328,7 @@
     z-index: 999;
     display: inline-block;
     word-break: keep-all;
+    white-space: pre;
     font-family: "Arial", "sans-serif"; /* 確か元のFlashプレーヤーはArial指定になっていたはず　要するにブラウザ任せ */
     color: white;
     padding: 0 .5em;
@@ -803,6 +813,7 @@
     
     var msgSize = msgsizetable.medium;
     var msgPos = postable.naka;
+    var msgReturns = ch.c.split('\n').length;
     
     $m = $('<div class="msg"/>');
     $m.text(ch.c);
@@ -849,7 +860,7 @@
           return (() => {
             var index = 0;
             var value = Math.max.apply(null, allocatedUeLine);
-            for (var i = 0; i <= allocatedUeLine.length - msgSize; i++) {
+            for (var i = 0; i <= allocatedUeLine.length - msgSize * msgReturns; i++) {
               if (allocatedUeLine[i] < value) {
                 value = allocatedUeLine[i];
                 index = i;
@@ -859,14 +870,14 @@
           })();
         case postable.naka:
           return (() => {
-            for (var i = 1; i <= 21 - msgSize; i++) {
+            for (var i = 1; i <= 21 - msgSize * msgReturns; i++) {
               if (hasRightSpace('.l' + i)) {
                 return i;
               }
             }
             var index = 0;
             var value = Math.max.apply(null, allocatedLine);
-            for (var i = 0; i <= allocatedLine.length - msgSize; i++) {
+            for (var i = 0; i <= allocatedLine.length - msgSize * msgReturns; i++) {
               if (allocatedLine[i] < value) {
                 value = allocatedLine[i];
                 index = i;
@@ -879,12 +890,12 @@
             var index = 0;
             var value = Math.max.apply(null, allocatedShitaLine);
             if (value === 0) {
-              return allocatedShitaLine.length - msgSize + 1;
+              return allocatedShitaLine.length - msgSize * msgReturns + 1;
             }
-            for (var i = 0; i <= allocatedShitaLine.length - msgSize; i++) {
+            for (var i = 0; i <= allocatedShitaLine.length - msgSize * msgReturns; i++) {
               if (allocatedShitaLine[i] <= value) {
                 var check = (() => {
-                  for (var j = i; j < i + msgSize; j++) {
+                  for (var j = i; j < i + msgSize * msgReturns; j++) {
                     if (allocatedShitaLine[j] > allocatedShitaLine[i]) {
                       i = j;
                       return false;
@@ -905,7 +916,7 @@
     })();
     
     // alloc
-    for (var i = line; i < line + msgSize; i++) {
+    for (var i = line; i < line + msgSize * msgReturns; i++) {
       lalloc(i - 1);
       if (msgPos === postable.ue) {
         ulalloc(i - 1);
@@ -918,7 +929,7 @@
     
     // free
     var free = (() => {
-      for (var i = line; i < line + msgSize; i++) {
+      for (var i = line; i < line + msgSize * msgReturns; i++) {
         lfree(i - 1);
         if (msgPos === postable.ue) {
           ulfree(i - 1);
@@ -1116,6 +1127,7 @@
         if (OPT.debug) {
           $('#kusa5').append('<div id="kusa5_debug" style="font-family: monospace;" />');
           $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
+          $('#kusa5_debug').append('<p style="position:absolute;top:0;right:4px;color:#64FF64;">&#x23ec;</p>');
           $('#kusa5_debug').append('<pre id="kusa5_lallocInfo" />');
         }
 
