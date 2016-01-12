@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     20
+// @version     21
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -527,6 +527,7 @@
     if(v.paused === true) {
       v.play();
       playPauseButton.innerHTML = "▲";
+      $('#kusa5_playbutton').remove();
     }else {
       v.pause();
       playPauseButton.innerHTML = "〓";
@@ -1192,6 +1193,7 @@
           return; // 以降はフォワードページのみの処理
 
         // プレミアム会員かどうか
+        // 本当はAPIを使うべきだよな
         if($('#siteHeaderNotificationPremium').is(':hidden')){
           isPremium = true;
         }
