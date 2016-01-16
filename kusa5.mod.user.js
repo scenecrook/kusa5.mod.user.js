@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     21
+// @version     22
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -20,16 +20,23 @@
 // ==/UserScript==
 
 (function () {
+  
   // オプション
   const OPT = {
-    noLimit: false,         // 察してくれ
-    autoPlay: true,         // 自動再生の有効/無効
+    // 全般 ------------------------------------------------
+    fastInit: true,         // ページ読み込み直後のCPU使用率が上がるかわりにHTML5プレーヤーの読み込みを高速化する
     hidePlaylist: false,    // 再生リストを非表示にする
     showPageTop: false,     // HTML5プレーヤーをページの上部に配置する　Flashプレーヤーには影響なし
     useBuffer: false,       // たぶんFirefoxじゃないと正常に動かない
     playerFPS: 2,           // プレイヤーのシークバーとか再生位置の更新フレームレート
     baseFontSize: 21,       // コメントの相対フォントサイズ　値を大きくするとコメントが小さくなる
-    debug: false
+    debug: false,
+    
+    // プレミアム会員専用 ----------------------------------
+    autoPlay: false,         // 自動再生の有効/無効
+    
+    // ？？？？ --------------------------------------------
+    noLimit: false,         // 察してくれ
   };
 
   const ASKURL = 'http://flapi.nicovideo.jp/api/getflv?v=';
@@ -37,6 +44,7 @@
   const WATCH = 'http://www.nicovideo.jp/watch/';
   const THREAD = 'http://flapi.nicovideo.jp/api/getthreadkey?thread=';
   const INFO = 'http://ext.nicovideo.jp/api/getthumbinfo/';
+  const VITAAPI = 'http://api.ce.nicovideo.jp';
   const apidata = JSON.parse($('#watchAPIDataContainer').text());
   const launchID = apidata.videoDetail.v; // APIに与える識別子
   const isIframe = window != parent;
@@ -47,7 +55,7 @@
   const smallMsgSize = OPT.baseFontSize;
   const mediumMsgSize = (OPT.baseFontSize / 3) * 2;
   const largeMsgSize = OPT.baseFontSize / 3;
-
+  
   var isPremium = false;
   var allocatedLine = [];
   var allocatedUeLine = [];
@@ -1111,16 +1119,16 @@
       dataType: 'xml',
     });
   }
-
+  
   /** main というかエントリーポイント */
-  window.addEventListener('load', function () {
-    for (var i = 0; i < commentLines; i++){
+  var initKusa5 = function () {
+    for (var i = 0; i < commentLines; i++) {
       allocatedLine[i] = 0;
       allocatedUeLine[i] = 0;
       allocatedShitaLine[i] = 0;
     }
     updateallocatedLine();
-    
+
     getMovieInfo().then(xml => {
       var pack = [];
       pack[0] = xml;
@@ -1137,14 +1145,34 @@
         $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応)</p>')
         return;
       } else {
+        // プレミアム会員かどうか
+        // 本当はVita APIを使うべきなんだけどCORSで弾かれるんだよな
+        // まじでCORS死んでくれ頼む後生だから
+        if ($('#siteHeaderNotificationPremium').is(':hidden')) {
+          isPremium = true;
+        }
+        else {
+          if (!OPT.fastInit && !OPT.noLimit) {
+            // ニコニコ側のJSの反映が遅いときにうまく判定できないため
+            var mo = new MutationObserver(function () {
+              if ($('#siteHeaderNotificationPremium').is(':hidden')) {
+                isPremium = true;
+              }
+            });
+            var siteHeaderNotification = document.getElementById("siteHeaderNotification")
+            var options = { childList: true, subtree: true };
+            mo.observe(siteHeaderNotification, options);
+          }
+        }
+        
         $('.notify_update_flash_player').hide();
         $('.playerContainer').hide();
-        if(OPT.hidePlaylist)
+        if (OPT.hidePlaylist)
           $('#playlist').hide();
         $('#playerContainerSlideArea').attr('id', 'kusa5');
-        if(OPT.showPageTop)
+        if (OPT.showPageTop)
           $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
-        if (!OPT.autoPlay) {
+        if ((isPremium || OPT.noLimit) && !OPT.autoPlay) {
           $video.removeAttr('autoplay');
           $video.attr({ poster: pack[2] });
           var $playButton = $('<div id="kusa5_playbutton"><div>▲</div></div>');
@@ -1155,69 +1183,50 @@
           $('#kusa5').append($playButton);
           $video.get(0).load();
         }
-          
+        
         const kusa5 = $('#kusa5')
           .append($video)
           .append(ctrPanel());
-
+          
         if (OPT.debug) {
           $('#kusa5').append('<div id="kusa5_debug" style="font-family: monospace;" />');
           $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
           $('#kusa5_debug').append('<p style="position:absolute;top:0;right:4px;color:#64FF64;">&#x23ec;</p>');
           $('#kusa5_debug').append('<pre id="kusa5_lallocInfo" />');
         }
-
+        
         updateRepeat(true);
-
+        
         $('input[name=nicorate]').change(ev => {
           localStorage.nicoRate =
           $video.get(0).playbackRate = parseFloat($(ev.target).val());
         });
-        $('input[value="'+ localStorage.nicoRate +'"]').click();
-
+        $('input[value="' + localStorage.nicoRate + '"]').click();
+        
         $('#volume-slider').on('input', ev => {
           localStorage.nicoVolume = ev.target.value;
           updateSlider(localStorage.nicoVolume);
         });
-
+        
         $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
         $('#kusa5 button.repeat').click(() => updateRepeat(false));
-
+        
         var promise = loadApiInfo(launchID).then(info => {
           $video.attr('src', info.url);
           $video.get(0).dataset.smid = launchID;
           return info;
         });
-
+        
         if (isIframe)
           return; // 以降はフォワードページのみの処理
-
-        // プレミアム会員かどうか
-        // 本当はAPIを使うべきだよな
-        if($('#siteHeaderNotificationPremium').is(':hidden')){
-          isPremium = true;
-        }
-        else{
-          if(!OPT.noLimit){
-            // ニコニコ側のJSの反映が遅いときにうまく判定できないため
-            var mo = new MutationObserver(function(){
-              if($('#siteHeaderNotificationPremium').is(':hidden')){
-                isPremium = true;
-              }
-            });
-            var siteHeaderNotification = document.getElementById("siteHeaderNotification")
-            var options = {childList: true, subtree: true};
-            mo.observe(siteHeaderNotification, options);
-          }
-        }
         
         var timeDrag = false;  /* Drag status */
-        $('.progressBar.seek').mousedown(function(e) {
+        $('.progressBar.seek').mousedown(function (e) {
           timeDrag = true;
           updatebar(e);
         });
-        $('.progressBar').mouseup(function(e) {
-          if(!timeDrag)
+        $('.progressBar').mouseup(function (e) {
+          if (!timeDrag)
             return;
           timeDrag = false;
           updatebar(e.pageX);
@@ -1230,7 +1239,7 @@
           if (!keyTbl[e.keyCode])
             return;
           keyTbl[e.keyCode]();
-          e.preventDefault();	
+          e.preventDefault();
         });
         kusa5.keydown(e => {
           //ボタンの処理が登録されてたらブラウザの動作をうちけす
@@ -1240,10 +1249,23 @@
         
         //メッセージ取得、文字流しとかのループイベント登録
         promise.then(loadMsg);
-        
+
         if ((isPremium || OPT.noLimit) && OPT.useBuffer) // バッファ用のiFrameを作成する
           setTimeout(() => createBuf(getNextId()), 10000);
       }
     });
-  }, false);
+  };
+  
+  if (OPT.fastInit) {
+    var timer = setInterval(() => {
+      // jQueryとUnderscore.jsが読み込み終わってる必要がある
+      // Nico.CommonNotificationHeaderにアクセスできる状態ならプレミアム会員かどうかのチェックも終わっている？
+      if ($.isReady && _.VERSION !== '' && Nico.CommonNotificationHeader.userId !== '') {
+        clearInterval(timer);
+        initKusa5();
+      }
+    }, 1);
+  } else {
+    window.addEventListener('load', initKusa5, false);
+  }
 })();
