@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     22
+// @version     23
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -200,7 +200,16 @@
   #playerContainerWrapper {
     padding: 24px 0;
   }
-
+  
+  input, button {
+    outline: 0;
+  }
+  
+  /* Firefox */
+  input::-moz-focus-inner, button::-moz-focus-inner {
+    border: 0;
+  }
+  
   /*
   コントロールパネル関係
   ******************************************************************************/
@@ -1044,6 +1053,7 @@
       <input type="range" name="bar"  id="volume-slider" step="1" min="0" max="100" value="0" />
       <span id="volume-bar"></span>
     </div>
+    <button class="btn mute r">🔊</button>
     <button class="btn repeat r">➡️</button>
     <div class="playtime r">
       <span class="current"></span>
@@ -1119,6 +1129,18 @@
       dataType: 'xml',
     });
   }
+  
+  var tryLoadValue = ((v, c, d) => {
+    var val = localStorage.getItem(v);
+    if (val === undefined || val !== c) {
+      setValue(v, d);
+      return d;
+    } else {
+      return val;
+    }
+  });
+  
+  var setValue = ((v, d) => localStorage.setItem(v, d));
   
   /** main というかエントリーポイント */
   var initKusa5 = function () {
@@ -1202,6 +1224,16 @@
           $video.get(0).playbackRate = parseFloat($(ev.target).val());
         });
         $('input[value="' + localStorage.nicoRate + '"]').click();
+        
+        $('#kusa5 button.mute').on('click', ev => {
+          if ($video.get(0).muted) {
+            $video.get(0).muted = false;
+            $('#kusa5 button.mute').html('🔊');
+          } else {
+            $video.get(0).muted = true;
+            $('#kusa5 button.mute').html('🔇');
+          }
+        });
         
         $('#volume-slider').on('input', ev => {
           localStorage.nicoVolume = ev.target.value;
