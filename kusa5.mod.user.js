@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     24
+// @version     25
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -553,6 +553,9 @@
   #kusa5_config > .kusa5box > p {
     font-size: 1.3rem;
     margin: 0;
+    padding-left: 8px;
+    border-left: 8px solid white;
+    border-bottom: 1px solid white;
   }
   
   #kusa5_config > .kusa5box > div > input[type="number"] {
@@ -1084,6 +1087,7 @@
       <span class="mainbar"/>
     </div>
     <div class="progressBar buf"><span class="bar"/></div>
+    <button class="btn rewind">⏮</button>
     <button class="btn toggle play">▲</button>
     ${rateForm() }
     <button class="btn full r">■</button>
@@ -1329,6 +1333,7 @@
         
         updateRepeat(true);
         
+        $('#kusa5 button.rewind').click(ev => $video.get(0).currentTime = 0);
         $('input[name=nicorate]').change(ev => {
           localStorage.Kusa5_nicoRate =
           $video.get(0).playbackRate = parseFloat($(ev.target).val());
