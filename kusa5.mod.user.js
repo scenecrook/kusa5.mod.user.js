@@ -20,23 +20,11 @@
 // ==/UserScript==
 
 (function () {
+  loadConfig();
   
-  // オプション
+  // オプション（将来的に削除する予定）
   const OPT = {
-    // 全般 ------------------------------------------------
-    fastInit: true,         // ページ読み込み直後のCPU使用率が上がるかわりにHTML5プレーヤーの読み込みを高速化する
-    hidePlaylist: false,    // 再生リストを非表示にする
-    showPageTop: false,     // HTML5プレーヤーをページの上部に配置する　Flashプレーヤーには影響なし
     useBuffer: false,       // たぶんFirefoxじゃないと正常に動かない
-    playerFPS: 2,           // プレイヤーのシークバーとか再生位置の更新フレームレート
-    baseFontSize: 21,       // コメントの相対フォントサイズ　値を大きくするとコメントが小さくなる
-    debug: false,
-    
-    // プレミアム会員専用 ----------------------------------
-    autoPlay: false,         // 自動再生の有効/無効
-    
-    // ？？？？ --------------------------------------------
-    noLimit: false,         // 察してくれ
   };
 
   const ASKURL = 'http://flapi.nicovideo.jp/api/getflv?v=';
@@ -52,9 +40,9 @@
   const smallVirtualLines = commentLines;
   const mediumVirtualLines = (commentLines / 3) * 2;
   const largeVirtualLines = commentLines / 3;
-  const smallMsgSize = OPT.baseFontSize;
-  const mediumMsgSize = (OPT.baseFontSize / 3) * 2;
-  const largeMsgSize = OPT.baseFontSize / 3;
+  const smallMsgSize = localStorage.Kusa5_baseFontSize;
+  const mediumMsgSize = (localStorage.Kusa5_baseFontSize / 3) * 2;
+  const largeMsgSize = localStorage.Kusa5_baseFontSize / 3;
   
   var isPremium = false;
   var allocatedLine = [];
@@ -62,7 +50,7 @@
   var allocatedShitaLine = [];
 
   var updateallocatedLine = (() => {
-    if (OPT.debug) {
+    if (localStorage.Kusa5_debug) {
       var normalizeNum = (n => {
         return UTIL.paddingRight(n, ' ', 2);
       });
@@ -204,8 +192,6 @@
   input, button {
     outline: 0;
   }
-  
-  /* Firefox */
   input::-moz-focus-inner, button::-moz-focus-inner {
     border: 0;
   }
@@ -519,18 +505,71 @@
   body.size_small.no_setting_panel.videoExplorer #kusa5 .msg{
     font-size: 12px;
   }
+  
+  /*
+  設定オーバーレイ
+  ******************************************************************************/
+  #kusa5_config {
+    position: absolute;
+    z-index: 9999;
+    color: white;
+    background: rgba(0, 0, 0, 0.9);
+    padding: 8px;
+    width: calc(100% - 16px);
+    height: calc(100% - 16px);
+    top: 0;
+  }
+  
+  #kusa5_config > .kusa5h1 {
+    display: inline-block;
+    position: relative;
+    font-size: 3rem;
+  }
+  
+  #kusa5_config > #kusa5_config_close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px;
+    color: black;
+    background: white;
+    border: 1px solid white;
+    font-size: 1.3rem;
+    font-family: monospace;
+    font-weight: bold;
+  }
+  #kusa5_config > #kusa5_config_close:hover {
+    background: #E0E0E0;
+  }
+  
+  #kusa5_config > .kusa5box {
+    display: inline-block;
+    padding-bottom: 1rem;
+    vertical-align: top;
+    width: 48%;
+    box-sizing: border-box;
+  }
+  
+  #kusa5_config > .kusa5box > p {
+    font-size: 1.3rem;
+    margin: 0;
+  }
+  
+  #kusa5_config > .kusa5box > div > input[type="number"] {
+    width: 4rem;
+  }
   `);
 
   const $video = $(`<video type="video/mp4"'
         codecs="avc1.42E01E, mp4a.40.2"
         autoplay />`)
+    .on('load', updateSlider)
     .on('ended', buffShift)
-    .on('pause', ev => localStorage.nicoRate = ev.target.playbackRate)
+    .on('pause', ev => localStorage.Kusa5_nicoRate = ev.target.playbackRate)
     .on('play',  ev => {
       // レート情報の記憶
-      $('input[value="'+ localStorage.nicoRate +'"]').click();
-      ev.target.playbackRate = localStorage.nicoRate;
-      updateSlider(localStorage.nicoVolume);
+      $('input[value="'+ localStorage.Kusa5_nicoRate +'"]').click();
+      ev.target.playbackRate = localStorage.Kusa5_nicoRate;
       if (!isIframe)
         return;
       // バッファー再生用のプレーヤーは処理を重くしないためにrata1
@@ -592,7 +631,7 @@
     var m = _.reduce([next_id, id_next], (c,re) => {
       return c || 主米.match(new RegExp(re, 'i'));
     },false);
-    OPT.debug && alert(!!m && !!m[0] ?
+    loadValue('Kusa5_debug') && alert(!!m && !!m[0] ?
             '次ID切り出し' + m[0]:
             '次パート無し');
     return parseInt(m && m[1] || -1);
@@ -738,7 +777,7 @@
           </packet>`;
       }
 
-      var updateInterval = 1000 / OPT.playerFPS;
+      var updateInterval = 1000 / loadValue('Kusa5_playerFPS');
       
       $.ajax({
         type: 'POST',
@@ -1046,8 +1085,9 @@
     </div>
     <div class="progressBar buf"><span class="bar"/></div>
     <button class="btn toggle play">▲</button>
-    ${rateForm()}
+    ${rateForm() }
     <button class="btn full r">■</button>
+    <button class="btn config r">🛠</button>
     <button class="btn comment-hidden r">💬</button>
     <div class="volume-slider r">
       <input type="range" name="bar"  id="volume-slider" step="1" min="0" max="100" value="0" />
@@ -1061,6 +1101,34 @@
       <span class="duration"></span>
     </div>
   </div>`;
+  
+  const CONFIG_OVERLAY = `
+  <div id="kusa5_config">
+    <button id="kusa5_config_close">✕</button>
+    <p class="kusa5h1">Kusa5.mod config</p>
+    <p>一部の設定はページリロードで反映されます</p>
+    <div class="kusa5box">
+      <p>全般</p>
+      <div><input type="checkbox" name="Kusa5_fastInit"> Kusa5.modを高速に初期化する（ページ読み込み直後のCPU使用率大）</div>
+      <div><input type="checkbox" name="Kusa5_hidePlaylist"> 再生リストを非表示にする</div>
+    </div>
+    <div class="kusa5box">
+      <p>HTML5プレーヤー</p>
+      <div><input type="checkbox" name="Kusa5_showPageTop"> ページ上部に表示　Flashプレーヤーには影響なし</div>
+      <div>シークバーとか再生位置の更新フレームレート<br><input type="number" name="Kusa5_playerFPS"> fps</div>
+      <div>コメントの相対フォントサイズ　値を大きくするとコメントが小さくなる<br><input type="number" name="Kusa5_baseFontSize"></div>
+    </div>
+    <div class="kusa5box">
+      <p>プレミアム会員専用</p>
+      <div><input type="checkbox" name="Kusa5_autoPlay"> 動画を自動再生する</div>
+    </div>
+    <div class="kusa5box">
+      <p>？？？？</p>
+      <div><input type="checkbox" name="Kusa5_debug"> デバッグモードを有効にする</div>
+      <div><input type="checkbox" name="Kusa5_noLimit"> 人としての尊厳を捨てて全てを解き放つ</div>
+    </div>
+  </div>
+  `;
 
   function ctrPanel() {
     var $panel = $(CONTROLE_PANEL);
@@ -1069,7 +1137,51 @@
     return $panel;
   }
 
-  function updateSlider(volume) {
+  function configOverlay() {
+    var $overlay = $(CONFIG_OVERLAY);
+    $overlay.find('#kusa5_config_close').on('click', () => {
+      $('#kusa5_config').find('input').each((i, e) => {
+        if ($(e).attr('type') === 'checkbox') {
+          localStorage.setItem($(e).attr('name'), $(e).prop('checked'));
+        }
+        if ($(e).attr('type') === 'number') {
+          localStorage.setItem($(e).attr('name'), $(e).prop('value'));
+        }
+      });
+      $('#kusa5_config').hide();
+    });
+    $overlay.hide();
+    return $overlay;
+  }
+
+  function loadValue(v) {
+      return JSON.parse(localStorage.getItem(v));
+  };
+
+  function loadConfig() {
+    var tryLoadValue = ((v) => {
+      var val = JSON.parse(localStorage.getItem(v));
+      if (val === null || val == '') {
+        return false;
+      } else {
+        return true;
+      }
+    });
+    if (!tryLoadValue('Kusa5_nicoVolume')) { localStorage.Kusa5_nicoVolume = 50; }
+    if (!tryLoadValue('Kusa5_nicoRate')) {localStorage.Kusa5_nicoRate = 1;}
+    
+    if (!tryLoadValue('Kusa5_fastInit')) {localStorage.Kusa5_fastInit = true;}
+    if (!tryLoadValue('Kusa5_hidePlaylist')) {localStorage.Kusa5_hidePlaylist = false;}
+    if (!tryLoadValue('Kusa5_showPageTop')) {localStorage.Kusa5_showPageTop = false;}
+    if (!tryLoadValue('Kusa5_playerFPS')) {localStorage.Kusa5_playerFPS = 2;}
+    if (!tryLoadValue('Kusa5_baseFontSize')) {localStorage.Kusa5_baseFontSize = 21;}
+    if (!tryLoadValue('Kusa5_autoPlay')) {localStorage.Kusa5_autoPlay = false;}
+    if (!tryLoadValue('Kusa5_debug')) {localStorage.Kusa5_debug = false;}
+    if (!tryLoadValue('Kusa5_noLimit')) {localStorage.Kusa5_noLimit = false;}
+  }
+  
+  function updateSlider() {
+    var volume = localStorage.getItem('Kusa5_nicoVolume');
     var slider = $('#volume-slider')[0];
     var bar = $('#volume-bar')[0];
     const range = slider.clientWidth;
@@ -1085,7 +1197,7 @@
     var seekBar = $('.progressBar.seek');
     var buffBar = $('.progressBar.seek .bufferbar');
     var offset = e.pageX - seekBar.offset().left; //Click pos
-    if (!(isPremium || OPT.noLimit) && (offset > buffBar.width())) {
+    if (!(isPremium || loadValue('Kusa5_noLimit')) && (offset > buffBar.width())) {
       offset = buffBar.width();
     }
     var ratio = Math.min(1, Math.max(0, offset / seekBar.width()));
@@ -1130,18 +1242,6 @@
     });
   }
   
-  var tryLoadValue = ((v, c, d) => {
-    var val = localStorage.getItem(v);
-    if (val === undefined || val !== c) {
-      setValue(v, d);
-      return d;
-    } else {
-      return val;
-    }
-  });
-  
-  var setValue = ((v, d) => localStorage.setItem(v, d));
-  
   /** main というかエントリーポイント */
   var initKusa5 = function () {
     for (var i = 0; i < commentLines; i++) {
@@ -1150,7 +1250,7 @@
       allocatedShitaLine[i] = 0;
     }
     updateallocatedLine();
-
+    
     getMovieInfo().then(xml => {
       var pack = [];
       pack[0] = xml;
@@ -1174,7 +1274,7 @@
           isPremium = true;
         }
         else {
-          if (!OPT.fastInit && !OPT.noLimit) {
+          if (!loadValue('Kusa5_fastInit') && !loadValue('Kusa5_noLimit')) {
             // ニコニコ側のJSの反映が遅いときにうまく判定できないため
             var mo = new MutationObserver(function () {
               if ($('#siteHeaderNotificationPremium').is(':hidden')) {
@@ -1189,12 +1289,12 @@
         
         $('.notify_update_flash_player').hide();
         $('.playerContainer').hide();
-        if (OPT.hidePlaylist)
+        if (loadValue('Kusa5_hidePlaylist'))
           $('#playlist').hide();
         $('#playerContainerSlideArea').attr('id', 'kusa5');
-        if (OPT.showPageTop)
+        if (loadValue('Kusa5_showPageTop'))
           $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
-        if ((isPremium || OPT.noLimit) && !OPT.autoPlay) {
+        if ((isPremium || loadValue('Kusa5_noLimit')) && !loadValue('Kusa5_autoPlay')) {
           $video.removeAttr('autoplay');
           $video.attr({ poster: pack[2] });
           var $playButton = $('<div id="kusa5_playbutton"><div>▲</div></div>');
@@ -1208,9 +1308,19 @@
         
         const kusa5 = $('#kusa5')
           .append($video)
-          .append(ctrPanel());
-          
-        if (OPT.debug) {
+          .append(ctrPanel())
+          .after(configOverlay());
+        
+        $('#kusa5_config').find('input').each((i, e) => {
+          if ($(e).attr('type') === 'checkbox') {
+            $(e).prop('checked', loadValue($(e).attr('name')));
+          }
+          if ($(e).attr('type') === 'number') {
+            $(e).prop('value', loadValue($(e).attr('name')));
+          }
+        });
+        
+        if (loadValue('Kusa5_debug')) {
           $('#kusa5').append('<div id="kusa5_debug" style="font-family: monospace;" />');
           $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
           $('#kusa5_debug').append('<p style="position:absolute;top:0;right:4px;color:#64FF64;">&#x23ec;</p>');
@@ -1220,10 +1330,10 @@
         updateRepeat(true);
         
         $('input[name=nicorate]').change(ev => {
-          localStorage.nicoRate =
+          localStorage.Kusa5_nicoRate =
           $video.get(0).playbackRate = parseFloat($(ev.target).val());
         });
-        $('input[value="' + localStorage.nicoRate + '"]').click();
+        $('input[value="' + localStorage.Kusa5_nicoRate + '"]').click();
         
         $('#kusa5 button.mute').on('click', ev => {
           if ($video.get(0).muted) {
@@ -1236,12 +1346,13 @@
         });
         
         $('#volume-slider').on('input', ev => {
-          localStorage.nicoVolume = ev.target.value;
-          updateSlider(localStorage.nicoVolume);
+          localStorage.setItem('Kusa5_nicoVolume', ev.target.value);
+          updateSlider();
         });
         
         $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
         $('#kusa5 button.repeat').click(() => updateRepeat(false));
+        $('#kusa5 button.config').click(ev => $('#kusa5_config').show());
         
         var promise = loadApiInfo(launchID).then(info => {
           $video.attr('src', info.url);
@@ -1282,13 +1393,13 @@
         //メッセージ取得、文字流しとかのループイベント登録
         promise.then(loadMsg);
 
-        if ((isPremium || OPT.noLimit) && OPT.useBuffer) // バッファ用のiFrameを作成する
+        if ((isPremium || loadValue('Kusa5_noLimit')) && OPT.useBuffer) // バッファ用のiFrameを作成する
           setTimeout(() => createBuf(getNextId()), 10000);
       }
     });
   };
   
-  if (OPT.fastInit) {
+  if (loadValue('Kusa5_fastInit') !== false) {
     var timer = setInterval(() => {
       // jQueryとUnderscore.jsが読み込み終わってる必要がある
       // Nico.CommonNotificationHeaderにアクセスできる状態ならプレミアム会員かどうかのチェックも終わっている？
