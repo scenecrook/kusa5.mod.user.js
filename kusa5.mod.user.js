@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     29
+// @version     30
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -201,10 +201,7 @@
     position:absolute;
     bottom: 0;
     width: 100%;
-    background: linear-gradient(to bottom, 
-                                rgba(0,0,0,0.24) 0%,
-                                rgba(0,0,0,0.63) 50%,
-                                rgba(0,0,0,1) 100%);
+    background: rgba(0, 0, 0, 0.9);
     transition: max-height .2s;
     height: 5px !important;
     opacity: 0.666 !important;
@@ -268,7 +265,8 @@
     display: block;
     position: absolute;
     left: 0px;
-    top:  10px;
+    top: 10px;
+    pointer-events: none;
   }
 
   .volume-slider input[type="range"] {
@@ -353,7 +351,7 @@
     color: white;
     padding: 0 .5em;
     position: absolute;
-    transition-duration: 8s;
+    transition-duration: 7s;
     transition-timing-function: linear;
     transition-property: transform;
     text-align: center;
@@ -511,6 +509,7 @@
     width: calc(100% - 16px);
     height: calc(100% - 16px);
     top: 0;
+    overflow-y: scroll;
   }
   
   #kusa5_config > .kusa5h1 {
@@ -521,8 +520,8 @@
   
   #kusa5_config > #kusa5_config_close {
     position: fixed;
-    top: 8px;
-    right: 8px;
+    top: 12px;
+    right: 32px;
     padding: 4px;
     color: black;
     background: white;
@@ -549,6 +548,20 @@
     padding-left: 8px;
     border-left: 8px solid white;
     border-bottom: 1px solid white;
+  }
+  
+  #kusa5_config > .kusa5box > div.mb1rem {
+    margin-bottom: 1rem;
+  }
+  
+  #kusa5_config > .kusa5box > div > p:first-of-type,
+  #kusa5_config > .kusa5box > div > span:first-of-type {
+    font-weight: bold;
+  }
+  
+  #kusa5_config > .kusa5box > div > p {
+    padding: 0;
+    margin: 0;
   }
   
   #kusa5_config > .kusa5box > div > input[type="number"] {
@@ -701,7 +714,7 @@
           var v = ev.target;
           var t = Math.round(v.currentTime * 100);
           chats.filter(ch => lastT < ch.t && ch.t < t)
-            .forEach(_.throttle(marqueeMsg, 250));
+            .forEach(_.throttle(marqueeMsg, loadValue('Kusa5_throttleComment')));
           lastT = t;//更新
 
           // ついでに動画の進捗バーを更新
@@ -829,10 +842,10 @@
       var bigwidth = _.max(_.map($('#kusa5').find(l),
           // offsetLeftだと0が返る
           l => $(l).position().left + l.scrollWidth));
-      var rigthSpace = baseW - bigwidth;
+      var rightSpace = baseW - bigwidth;
       // 比率係数は適当。文字が重なるようなら要調整
       // transition速度(つまりアニメーション再生時間)と関係
-      return rigthSpace > $m.width() * 0.45;
+      return rightSpace > $m.width() * 0.75;
     }
     
     var line = (() => {
@@ -1009,23 +1022,36 @@
     <p>一部の設定はページリロードで反映されます</p>
     <div class="kusa5box">
       <p>全般</p>
-      <div><input type="checkbox" name="Kusa5_fastInit"> Kusa5.modを高速に初期化する（ページ読み込み直後のCPU使用率大）</div>
-      <div><input type="checkbox" name="Kusa5_hidePlaylist"> 再生リストを非表示にする</div>
+      <div><input type="checkbox" name="Kusa5_fastInit"> <span>Kusa5.modを高速に初期化する</span>（ページ読み込み直後のCPU使用率大）</div>
+      <div><input type="checkbox" name="Kusa5_hidePlaylist"> <span>再生リストを非表示にする</span></div>
     </div>
     <div class="kusa5box">
       <p>HTML5プレーヤー</p>
-      <div><input type="checkbox" name="Kusa5_showPageTop"> ページ上部に表示　Flashプレーヤーには影響なし</div>
-      <div>シークバーとか再生位置の更新フレームレート<br><input type="number" name="Kusa5_playerFPS"> fps</div>
-      <div>コメントの相対フォントサイズ　値を大きくするとコメントが小さくなる<br><input type="number" name="Kusa5_baseFontSize"></div>
+      <div class="mb1rem">
+        <input type="checkbox" name="Kusa5_showPageTop"> <span>ページ上部に表示</span>　Flashプレーヤーには影響なし
+      </div>
+      <div class="mb1rem">
+        <p>シークバーとか再生位置の更新フレームレート</p>
+        <input type="number" name="Kusa5_playerFPS" min="1" max="120"> fps
+      </div>
+      <div class="mb1rem">
+        <p>コメントの相対フォントサイズ</p>
+        <p>値を大きくするとコメントが小さくなる</p>
+        ( プレーヤーの高さ ÷ <input type="number" name="Kusa5_baseFontSize" min="21"> ) px
+      </div>
+      <div>
+        <p>コメントイベントの最短発火間隔</p>
+        <input type="number" name="Kusa5_throttleComment" min="0"> ms
+      </div>
     </div>
     <div class="kusa5box">
       <p>プレミアム会員専用</p>
-      <div><input type="checkbox" name="Kusa5_autoPlay"> 動画を自動再生する</div>
+      <div><input type="checkbox" name="Kusa5_autoPlay"> <span>動画を自動再生する</span></div>
     </div>
     <div class="kusa5box">
       <p>？？？？</p>
-      <div><input type="checkbox" name="Kusa5_debug"> デバッグモードを有効にする</div>
-      <div><input type="checkbox" name="Kusa5_noLimit"> 人としての尊厳を捨てて全てを解き放つ</div>
+      <div><input type="checkbox" name="Kusa5_debug"> <span>デバッグモードを有効にする</span></div>
+      <div><input type="checkbox" name="Kusa5_noLimit"> <span>人としての尊厳を捨てて全てを解き放つ</span></div>
     </div>
     <div class="kusa5box">
       <p>NGキーワード</p>
@@ -1108,6 +1134,7 @@
     if (!tryLoadValue('Kusa5_showPageTop')) {localStorage.Kusa5_showPageTop = false;}
     if (!tryLoadValue('Kusa5_playerFPS')) {localStorage.Kusa5_playerFPS = 2;}
     if (!tryLoadValue('Kusa5_baseFontSize')) {localStorage.Kusa5_baseFontSize = 21;}
+    if (!tryLoadValue('Kusa5_throttleComment')) {localStorage.Kusa5_throttleComment = 100;}
     if (!tryLoadValue('Kusa5_autoPlay')) {localStorage.Kusa5_autoPlay = false;}
     if (!tryLoadValue('Kusa5_debug')) {localStorage.Kusa5_debug = false;}
     if (!tryLoadValue('Kusa5_noLimit')) {localStorage.Kusa5_noLimit = false;}
@@ -1213,7 +1240,7 @@
     }).then(pack => {
       var isMP4 = pack[1];
       if (!isMP4) {
-        $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応)</p>')
+        $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応）</p>')
         return;
       } else {
         generateNGarray();
