@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     28
+// @version     29
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -43,7 +43,8 @@
   var allocatedLine = [];
   var allocatedUeLine = [];
   var allocatedShitaLine = [];
-
+  var ngArray = [];
+  
   var updateallocatedLine = (() => {
     if (localStorage.Kusa5_debug) {
       var normalizeNum = (n => {
@@ -502,7 +503,7 @@
   設定オーバーレイ
   ******************************************************************************/
   #kusa5_config {
-    position: absolute;
+    position: fixed;
     z-index: 9999;
     color: white;
     background: rgba(0, 0, 0, 0.9);
@@ -519,7 +520,7 @@
   }
   
   #kusa5_config > #kusa5_config_close {
-    position: absolute;
+    position: fixed;
     top: 8px;
     right: 8px;
     padding: 4px;
@@ -542,7 +543,7 @@
     box-sizing: border-box;
   }
   
-  #kusa5_config > .kusa5box > p {
+  #kusa5_config > .kusa5box > p:first-of-type {
     font-size: 1.3rem;
     margin: 0;
     padding-left: 8px;
@@ -552,6 +553,18 @@
   
   #kusa5_config > .kusa5box > div > input[type="number"] {
     width: 4rem;
+  }
+  
+  #kusa5_config > .kusa5box > div > textarea {
+    width: 100%;
+    max-width: 100%;
+    height: 12rem;
+  }
+  
+  #kusa5_config > .kusa5box > #Kusa5_regexReset {
+    float: right;
+    background: white;
+    border: none;
   }
   `);
 
@@ -613,23 +626,9 @@
     if (ch.t < 100) // 1秒以内。いわゆる0秒コメ
       return false;
     // NGワード
-    return _.reduce([
-        /[韓荒\[\]]/,
-        /(くない|くせえ|アンチ|びみょ|チョン)/,
-        /(イライラ|いらいら)/,
-        /(キモ|きも|パク|ぱく|エミュ|ウザ|うざ)/,
-        /(うぜ|ウゼ)[えぇエェ]/,
-        /(推奨|注意|NG|ＮＧ|自演)/,
-        /(朝鮮|創価|在日)/,
-        /(イラ|いら)[イいつ]?/,
-        /(嫌|いや|イヤ)なら/,
-        /(ゆとり|信者|名人様|赤字|水色|餓鬼)/,
-        /(萎え|挙手)/,
-        /(つま|ツマ)[ラら]?[なねんナネン]/,
-        /(eco|ｅｃｏ|エコノミ|画質|時報|3DS|倍速)/,
-        /^[ノﾉ]$/,
-        /^[\/／@＠※←↑↓]/,
-      ], (cary, re) => cary && !ch.c.match(re), true);
+    if (loadValue('Kusa5_ngKeyword') === '') { return true; }
+    var ng = loadValue('Kusa5_ngKeyword');
+    return _.reduce(ngArray, (cary, re) => cary && !ch.c.match(re), true);
   }
 
   function xml2chats(xml) {
@@ -1028,8 +1027,32 @@
       <div><input type="checkbox" name="Kusa5_debug"> デバッグモードを有効にする</div>
       <div><input type="checkbox" name="Kusa5_noLimit"> 人としての尊厳を捨てて全てを解き放つ</div>
     </div>
+    <div class="kusa5box">
+      <p>NGキーワード</p>
+      <p style="display:inline-block;">正規表現が使用できます（行区切り）</p>
+      <button id="Kusa5_regexReset"><i class="fa fa-repeat"></i> リセット</button>
+      <div><textarea id="Kusa5_regex" name="Kusa5_ngKeyword"></textarea></div>
+    </div>
   </div>
   `;
+
+  function DEFAULT_NG() {
+    return `/[韓荒\[\]]/,
+/(くない|くせえ|アンチ|びみょ|チョン)/,
+/(イライラ|いらいら)/,
+/(キモ|きも|パク|ぱく|エミュ|ウザ|うざ)/,
+/(うぜ|ウゼ)[えぇエェ]/,
+/(推奨|注意|NG|ＮＧ|自演)/,
+/(朝鮮|創価|在日)/,
+/(イラ|いら)[イいつ]?/,
+/(嫌|いや|イヤ)なら/,
+/(ゆとり|信者|名人様|赤字|水色|餓鬼)/,
+/(萎え|挙手)/,
+/(つま|ツマ)[ラら]?[なねんナネン]/,
+/(eco|ｅｃｏ|エコノミ|画質|時報|3DS|倍速)/,
+/^[ノﾉ]$/,
+/^[\/／@＠※←↑↓]/,`
+  };
 
   function ctrPanel() {
     var $panel = $(CONTROLE_PANEL);
@@ -1040,6 +1063,11 @@
 
   function configOverlay() {
     var $overlay = $(CONFIG_OVERLAY);
+    $overlay.find('#Kusa5_regexReset').on('click', () => {
+      $('#kusa5_config').find('#Kusa5_regex').each((i, e) => {
+        $(e).prop('value', DEFAULT_NG());
+      });
+    });
     $overlay.find('#kusa5_config_close').on('click', () => {
       $('#kusa5_config').find('input').each((i, e) => {
         if ($(e).attr('type') === 'checkbox') {
@@ -1049,7 +1077,11 @@
           localStorage.setItem($(e).attr('name'), $(e).prop('value'));
         }
       });
+      $('#kusa5_config').find('textarea').each((i, e) => {
+        localStorage.setItem($(e).attr('name'), JSON.stringify($(e).prop('value')));
+      });
       $('#kusa5_config').hide();
+      $('body').css('overflow', 'auto');
     });
     $overlay.hide();
     return $overlay;
@@ -1060,9 +1092,10 @@
   };
 
   function loadConfig() {
-    var tryLoadValue = ((v) => {
+    var tryLoadValue = ((v, b) => {
+      b = !!b; 
       var val = JSON.parse(localStorage.getItem(v));
-      if (val === null || val == '') {
+      if (val === null || (!b && val == '')) {
         return false;
       } else {
         return true;
@@ -1070,7 +1103,6 @@
     });
     if (!tryLoadValue('Kusa5_nicoVolume')) { localStorage.Kusa5_nicoVolume = 50; }
     if (!tryLoadValue('Kusa5_nicoRate')) {localStorage.Kusa5_nicoRate = 1;}
-    
     if (!tryLoadValue('Kusa5_fastInit')) {localStorage.Kusa5_fastInit = true;}
     if (!tryLoadValue('Kusa5_hidePlaylist')) {localStorage.Kusa5_hidePlaylist = false;}
     if (!tryLoadValue('Kusa5_showPageTop')) {localStorage.Kusa5_showPageTop = false;}
@@ -1079,6 +1111,7 @@
     if (!tryLoadValue('Kusa5_autoPlay')) {localStorage.Kusa5_autoPlay = false;}
     if (!tryLoadValue('Kusa5_debug')) {localStorage.Kusa5_debug = false;}
     if (!tryLoadValue('Kusa5_noLimit')) {localStorage.Kusa5_noLimit = false;}
+    if (!tryLoadValue('Kusa5_ngKeyword', true)) {localStorage.Kusa5_ngKeyword = JSON.stringify(DEFAULT_NG());}
   }
   
   function updateSlider() {
@@ -1143,6 +1176,21 @@
     });
   }
   
+  function generateNGarray() {
+    var regex = /\/(.*)\/(.*)\,/;
+    var ng = loadValue('Kusa5_ngKeyword');
+    _.each(ng.split('\n'), v => {
+      var m = v.match(regex);
+      var a = m[1].replace('\/', '/').replace('//', '/');
+      var b = m[2];
+      if (b != '') {
+        ngArray.push(new RegExp(a, b));
+      } else {
+        ngArray.push(new RegExp(a));
+      }
+    });
+  }
+  
   /** main というかエントリーポイント */
   var initKusa5 = function () {
     for (var i = 0; i < commentLines; i++) {
@@ -1168,6 +1216,8 @@
         $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応)</p>')
         return;
       } else {
+        generateNGarray();
+        
         // プレミアム会員かどうか
         // 本当はVita APIを使うべきなんだけどCORSで弾かれるんだよな
         // まじでCORS死んでくれ頼む後生だから
@@ -1209,8 +1259,7 @@
         
         const kusa5 = $('#kusa5')
           .append($video)
-          .append(ctrPanel())
-          .after(configOverlay());
+          .append(ctrPanel());
         
         $('#kusa5_config').find('input').each((i, e) => {
           if ($(e).attr('type') === 'checkbox') {
@@ -1219,6 +1268,9 @@
           if ($(e).attr('type') === 'number') {
             $(e).prop('value', loadValue($(e).attr('name')));
           }
+        });
+        $('#kusa5_config').find('textarea').each((i, e) => {
+          $(e).prop('value', loadValue($(e).attr('name')));
         });
         
         if (loadValue('Kusa5_debug')) {
@@ -1254,7 +1306,10 @@
         
         $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
         $('#kusa5 button.repeat').click(() => updateRepeat(false));
-        $('#kusa5 button.config').click(ev => $('#kusa5_config').show());
+        $('#kusa5 button.config').click(ev => {
+          $('#kusa5_config').show();
+          $('body').css('overflow', 'hidden');
+        });
         
         var promise = loadApiInfo(launchID).then(info => {
           $video.attr('src', info.url);
@@ -1299,7 +1354,8 @@
   };
   
   // init
-  $('body').append($('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">'));
+  $('body').append($('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">'))
+           .append(configOverlay());
   if (loadValue('Kusa5_fastInit') !== false) {
     var timer = setInterval(() => {
       // jQueryとUnderscore.jsが読み込み終わってる必要がある
