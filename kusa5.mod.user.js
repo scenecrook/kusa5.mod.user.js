@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     27
+// @version     28
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -22,11 +22,6 @@
 (function () {
   loadConfig();
   
-  // オプション（将来的に削除する予定）
-  const OPT = {
-    useBuffer: false,       // たぶんFirefoxじゃないと正常に動かない
-  };
-
   const ASKURL = 'http://flapi.nicovideo.jp/api/getflv?v=';
   const THUMB = 'http://tn-skr3.smilevideo.jp/smile?i=';
   const WATCH = 'http://www.nicovideo.jp/watch/';
@@ -255,8 +250,6 @@
   .controle-panel .progressBar.seek .bufferbar {
     background: hsla(0, 100%, 100%, 0.33);
   }
-  .controle-panel .progressBar.buf       { height: 2px;}
-  .controle-panel .progressBar.buf .bar  { background: #1193F3;}
   .volume-slider {
     position: relative;
     float: right;
@@ -566,7 +559,6 @@
         codecs="avc1.42E01E, mp4a.40.2"
         autoplay />`)
     .on('load', updateSlider)
-    .on('ended', buffShift)
     .on('pause', ev => localStorage.Kusa5_nicoRate = ev.target.playbackRate)
     .on('play',  ev => {
       // レート情報の記憶
@@ -600,46 +592,6 @@
     $('head').append(styleSeet);
   }
 
-  /* 現在のページのDOMから次動画のIDを取得する。
-  * なので次の次の動画のIDを取るなら事前にヘッダーを書き換えておく必要がある。*/
-  function getNextId() {
-    // 初回のみカレントID
-    const currentID = $('#kusa5 video').data('smid');
-    const id = /\W?s(?:m|o)(\d{3,10})\W?/.source; // 現状見受けられる動画は8桁
-    const next = "(?:" + ["次","next","つづ","続","最","終"]
-        .map(s => s + ".{0,4}")
-        .join("|") + ")";
-    //const prev = ["前","prev","まえ","ぜん","一","初"];
-
-    // スペースに使われそうな文字(出現しないかもしれない)
-    const s = /[\s_|:：]?/.source; 
-
-    const arrows = [  
-      " - ",
-      "←",
-      "→","⇒",
-      ":", "：",
-      "<","<<","＜＜","≪","«",
-      ">",">>","＞＞","≫","»",
-      "[<＜≪«][-ー＝=]", // 二文字組み合わせやじるし
-      "[-ー＝=][>＞≫»]"];
-    const _A_ = s + "(?:" + arrows.join("|") + ")" + s;
-    const next_id = next + _A_ + id  ;
-    const id_next = id   + _A_ + next;
-    //const prev_id = s + prev + _A_ + id   + s;
-    //const id_prev = s + id   + _A_ + prev + s;
-    const 主米 = $('.description').text();
-    //return _.reduce([next_id, id_next], (c,re) => c || 主米.match(re));
-    var m = _.reduce([next_id, id_next], (c,re) => {
-      return c || 主米.match(new RegExp(re, 'i'));
-    },false);
-    loadValue('Kusa5_debug') && alert(!!m && !!m[0] ?
-            '次ID切り出し' + m[0]:
-            '次パート無し');
-    return parseInt(m && m[1] || -1);
-
-  }
-
   const FullScreen = {};
   FullScreen.isOpen = () =>
     document.mozFullScreen || document.webkitIsFullScreen ||
@@ -656,59 +608,6 @@
     FullScreen.isOpen() ?
       FullScreen.cancel() :
       FullScreen.req($('#kusa5')[0]);
-
-  /**
-   * ページの遷移処理。実際にはコンテンツを入れ替えるだけで
-   * フロントのページは遷移させない
-   */
-  function buffShift() {
-    $('.progressBar.buf .bar').css('width', '0%');
-    var $nextPage = $('#buf-video').contents().find('body');
-    // ビデオソース書き換え
-    var $buf = $nextPage.find('#kusa5 video');
-    if (!OPT.useBuffer || $buf.size() == 0) {
-      FullScreen.cancel();
-      return;
-    }
-
-    // 上部のコメントとかタイトル書き換え
-    $('.videoHeaderTitle').text($nextPage.find('.videoHeaderTitle').text());
-    $('#topVideoInfo').remove();
-    $('#videoDetailInformation').append($nextPage.find('#topVideoInfo'));
-
-    const nextid = $buf[0].dataset.smid;
-    const nobuffer = nextid <= $video.data('smid');
-    $video.attr('src',  $buf.attr('src'));
-    $video.get(0).dataset.smid = nextid;
-
-    loadApiInfo(nextid).then(loadMsg); // メッセージ取得 && 整形登録
-    history.pushState(null,null, WATCH + nextid); // url書き換え
-
-    if (nobuffer) {
-      $('#buf-video').remove();
-      FullScreen.cancel();
-    } else {
-      setTimeout(()=>createBuf(getNextId()), 10000);
-    }
-  }
-
-  function createBuf(id) {
-    $('#buf-video').remove();
-  console.log('next-id', id);
-    if (!id || id < 0)
-      return;
-    $('#kusa5').append(`<iframe id="buf-video" src="${WATCH + id}"
-            width="10px" height="10px" />`);
-    // 次ページの動画読み込み進捗を取得
-    setTimeout(() => {
-      const v = $('#buf-video').contents().find('#kusa5 video')[0];
-      const p = $('.progressBar.buf .bar');
-      $(v).off('timeupdate').on('timeupdate', _.throttle(ev => {
-        var w = 100 * v.currentTime / v.duration;
-        p.css('width', w+'%');
-      }, 10000));
-    }, 20000);
-  }
 
   function ngfilter(ch) {
     if (ch.t < 100) // 1秒以内。いわゆる0秒コメ
@@ -1085,7 +984,6 @@
       <span class="bufferbar"/>
       <span class="mainbar"/>
     </div>
-    <div class="progressBar buf"><span class="bar"/></div>
     <button class="btn rewind"><i class="fa fa-fast-backward"></i></button>
     <button class="btn toggle play"><i class="fa fa-play"></i></button>
     ${rateForm() }
@@ -1396,9 +1294,6 @@
         
         //メッセージ取得、文字流しとかのループイベント登録
         promise.then(loadMsg);
-
-        if ((isPremium || loadValue('Kusa5_noLimit')) && OPT.useBuffer) // バッファ用のiFrameを作成する
-          setTimeout(() => createBuf(getNextId()), 10000);
       }
     });
   };
