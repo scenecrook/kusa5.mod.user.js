@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     26
+// @version     27
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -1312,8 +1312,7 @@
         const kusa5 = $('#kusa5')
           .append($video)
           .append(ctrPanel())
-          .after(configOverlay())
-          .after($('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">'));
+          .after(configOverlay());
         
         $('#kusa5_config').find('input').each((i, e) => {
           if ($(e).attr('type') === 'checkbox') {
@@ -1404,6 +1403,8 @@
     });
   };
   
+  // init
+  $('body').append($('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">'));
   if (loadValue('Kusa5_fastInit') !== false) {
     var timer = setInterval(() => {
       // jQueryとUnderscore.jsが読み込み終わってる必要がある
