@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     25
+// @version     26
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -177,7 +177,6 @@
     cursor: pointer;
   }
   #kusa5 #kusa5_playbutton > div {
-    transform: rotate(90deg);
     cursor: pointer;
   }
   
@@ -230,6 +229,10 @@
     border: none;
     background-color: transparent;
   }
+  .controle-panel > .btn {
+    width: 24px;
+    float: left;
+  }
   .controle-panel .r {float: right;}
 
   .controle-panel .progressBar {
@@ -254,10 +257,6 @@
   }
   .controle-panel .progressBar.buf       { height: 2px;}
   .controle-panel .progressBar.buf .bar  { background: #1193F3;}
-  .btn.play {
-    /* 再生マークは▲記号を横に90回転させ表現 */
-    transform: rotate(90deg);
-  }
   .volume-slider {
     position: relative;
     float: right;
@@ -585,11 +584,11 @@
     var v = $video[0];  
     if(v.paused === true) {
       v.play();
-      playPauseButton.innerHTML = "▲";
+      playPauseButton.innerHTML = '<i class="fa fa-play"></i>';
       $('#kusa5_playbutton').remove();
     }else {
       v.pause();
-      playPauseButton.innerHTML = "〓";
+      playPauseButton.innerHTML = '<i class="fa fa-pause"></i>';
     }
   };
 
@@ -1087,18 +1086,18 @@
       <span class="mainbar"/>
     </div>
     <div class="progressBar buf"><span class="bar"/></div>
-    <button class="btn rewind">⏮</button>
-    <button class="btn toggle play">▲</button>
+    <button class="btn rewind"><i class="fa fa-fast-backward"></i></button>
+    <button class="btn toggle play"><i class="fa fa-play"></i></button>
     ${rateForm() }
-    <button class="btn full r">■</button>
-    <button class="btn config r">🛠</button>
-    <button class="btn comment-hidden r">💬</button>
+    <button class="btn full r"><i class="fa fa-arrows-alt"></i></button>
+    <button class="btn config r"><i class="fa fa-cog"></i></button>
+    <button class="btn comment-hidden r"><i class="fa fa-comment"></i></button>
     <div class="volume-slider r">
       <input type="range" name="bar"  id="volume-slider" step="1" min="0" max="100" value="0" />
       <span id="volume-bar"></span>
     </div>
-    <button class="btn mute r">🔊</button>
-    <button class="btn repeat r">➡️</button>
+    <button class="btn mute r"><i class="fa fa-volume-up"></i></button>
+    <button class="btn repeat r"><i class="fa fa-arrow-right"></i></button>
     <div class="playtime r">
       <span class="current"></span>
       /
@@ -1221,9 +1220,9 @@
       localStorage.repeat = $video.get(0).loop;
     }
     if($video.get(0).loop)
-      $('button.repeat').html(`🔁`);
+      $('button.repeat').html('<i class="fa fa-repeat"></i>');
     else
-      $('button.repeat').html(`➡️`);
+      $('button.repeat').html('<i class="fa fa-arrow-right"></i>');
   }
 
   // 対応外（ニコニコムービーメーカーとか）のURLを弾く
@@ -1301,7 +1300,7 @@
         if ((isPremium || loadValue('Kusa5_noLimit')) && !loadValue('Kusa5_autoPlay')) {
           $video.removeAttr('autoplay');
           $video.attr({ poster: pack[2] });
-          var $playButton = $('<div id="kusa5_playbutton"><div>▲</div></div>');
+          var $playButton = $('<div id="kusa5_playbutton"><div><i class="fa fa-play"></i></div></div>');
           $playButton.on('click', () => {
             $video.get(0).play();
             $('#kusa5_playbutton').remove();
@@ -1313,7 +1312,8 @@
         const kusa5 = $('#kusa5')
           .append($video)
           .append(ctrPanel())
-          .after(configOverlay());
+          .after(configOverlay())
+          .after($('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">'));
         
         $('#kusa5_config').find('input').each((i, e) => {
           if ($(e).attr('type') === 'checkbox') {
@@ -1343,10 +1343,10 @@
         $('#kusa5 button.mute').on('click', ev => {
           if ($video.get(0).muted) {
             $video.get(0).muted = false;
-            $('#kusa5 button.mute').html('🔊');
+            $('#kusa5 button.mute').html('<i class="fa fa-volume-up"></i>');
           } else {
             $video.get(0).muted = true;
-            $('#kusa5 button.mute').html('🔇');
+            $('#kusa5 button.mute').html('<i class="fa fa-volume-off"></i>');
           }
         });
         
