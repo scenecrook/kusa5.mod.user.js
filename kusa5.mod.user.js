@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     30
+// @version     31
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -802,156 +802,158 @@
   }
 
   function marqueeMsg(ch) {
-    const baseW = $('#kusa5').width() + 10;
-    //const hasMsg = $('#kusa5 .msg').size() > 0;
-    
-    var msgSize = msgsizetable.medium;
-    var msgPos = postable.naka;
-    var msgReturns = ch.c.split('\n').length;
-    
-    $m = $('<div class="msg"/>');
-    $m.text(ch.c);
-    $m.html($m.text().replace(/\n/, '<br>'));
-    _.each(ch.m.split(' '), command => {
-      if (command in colortable) {
-        $m.css('color', colortable[command]);
-      } else if (command[0] === '#') {
-        $m.css('color', command);
+    setTimeout(() => {
+      const baseW = $('#kusa5').width() + 10;
+      //const hasMsg = $('#kusa5 .msg').size() > 0;
+      
+      var msgSize = msgsizetable.medium;
+      var msgPos = postable.naka;
+      var msgReturns = ch.c.split('\n').length;
+      
+      $m = $('<div class="msg"/>');
+      $m.text(ch.c);
+      $m.html($m.text().replace(/\n/, '<br>'));
+      _.each(ch.m.split(' '), command => {
+        if (command in colortable) {
+          $m.css('color', colortable[command]);
+        } else if (command[0] === '#') {
+          $m.css('color', command);
+        }
+        if (command in sizetable) {
+          msgSize = msgsizetable[command];
+          $m.addClass(command);
+        }
+        if (command in postable) {
+          msgPos = postable[command];
+          $m.addClass(command);
+        }
+        if(command === 'invisible') {
+          $m.hide();
+        }
+      });
+      $video.after($m);
+      
+      if (msgPos === postable.naka) {
+        // 流すコメントは右画面外にセット
+        $m.css('right', `-${$m.width() + 10}px`);
       }
-      if (command in sizetable) {
-        msgSize = msgsizetable[command];
-        $m.addClass(command);
+      
+      function hasRightSpace(l) {
+        // 一番右端にあるmsgの右端の位置
+        var bigwidth = _.max(_.map($('#kusa5').find(l),
+            // offsetLeftだと0が返る
+            l => $(l).position().left + l.scrollWidth));
+        var rightSpace = baseW - bigwidth;
+        // 比率係数は適当。文字が重なるようなら要調整
+        // transition速度(つまりアニメーション再生時間)と関係
+        return rightSpace > $m.width() * 0.75;
       }
-      if (command in postable) {
-        msgPos = postable[command];
-        $m.addClass(command);
-      }
-      if(command === 'invisible') {
-        $m.hide();
-      }
-    });
-    $video.after($m);
-    
-    if (msgPos === postable.naka) {
-      // 流すコメントは右画面外にセット
-      $m.css('right', `-${$m.width() + 10}px`);
-    }
-    
-    function hasRightSpace(l) {
-      // 一番右端にあるmsgの右端の位置
-      var bigwidth = _.max(_.map($('#kusa5').find(l),
-          // offsetLeftだと0が返る
-          l => $(l).position().left + l.scrollWidth));
-      var rightSpace = baseW - bigwidth;
-      // 比率係数は適当。文字が重なるようなら要調整
-      // transition速度(つまりアニメーション再生時間)と関係
-      return rightSpace > $m.width() * 0.75;
-    }
-    
-    var line = (() => {
-      switch (msgPos) {
-        case postable.ue:
-          return (() => {
-            var index = 0;
-            var value = Math.max.apply(null, allocatedUeLine);
-            for (var i = 0; i <= allocatedUeLine.length - msgSize * msgReturns; i++) {
-              if (allocatedUeLine[i] < value) {
-                value = allocatedUeLine[i];
-                index = i;
-              }
-            }
-            return index + 1;
-          })();
-        case postable.naka:
-          return (() => {
-            for (var i = 1; i <= 21 - msgSize * msgReturns; i++) {
-              if (hasRightSpace('.l' + i)) {
-                return i;
-              }
-            }
-            var index = 0;
-            var value = Math.max.apply(null, allocatedLine);
-            for (var i = 0; i <= allocatedLine.length - msgSize * msgReturns; i++) {
-              if (allocatedLine[i] < value) {
-                value = allocatedLine[i];
-                index = i;
-              }
-            }
-            return index + 1;
-          })();
-        case postable.shita:
-          return (() => {
-            var index = 0;
-            var value = Math.max.apply(null, allocatedShitaLine);
-            if (value === 0) {
-              return allocatedShitaLine.length - msgSize * msgReturns + 1;
-            }
-            for (var i = 0; i <= allocatedShitaLine.length - msgSize * msgReturns; i++) {
-              if (allocatedShitaLine[i] <= value) {
-                var check = (() => {
-                  for (var j = i; j < i + msgSize * msgReturns; j++) {
-                    if (allocatedShitaLine[j] > allocatedShitaLine[i]) {
-                      i = j;
-                      return false;
-                    }
-                  }
-                  return true;
-                });
-                
-                if (check()) {
-                  value = allocatedShitaLine[i];
+      
+      var line = (() => {
+        switch (msgPos) {
+          case postable.ue:
+            return (() => {
+              var index = 0;
+              var value = Math.max.apply(null, allocatedUeLine);
+              for (var i = 0; i <= allocatedUeLine.length - msgSize * msgReturns; i++) {
+                if (allocatedUeLine[i] < value) {
+                  value = allocatedUeLine[i];
                   index = i;
                 }
               }
-            }
-            return index + 1;
-          })();
-      }
-    })();
-    
-    // alloc
-    for (var i = line; i < line + msgSize * msgReturns; i++) {
-      lalloc(i - 1);
-      if (msgPos === postable.ue) {
-        ulalloc(i - 1);
-      }
-      if (msgPos === postable.shita) {
-        slalloc(i - 1);
-      }
-      $m.addClass('l' + i);
-    }
-    
-    // free
-    var free = (() => {
+              return index + 1;
+            })();
+          case postable.naka:
+            return (() => {
+              for (var i = 1; i <= 21 - msgSize * msgReturns; i++) {
+                if (hasRightSpace('.l' + i)) {
+                  return i;
+                }
+              }
+              var index = 0;
+              var value = Math.max.apply(null, allocatedLine);
+              for (var i = 0; i <= allocatedLine.length - msgSize * msgReturns; i++) {
+                if (allocatedLine[i] < value) {
+                  value = allocatedLine[i];
+                  index = i;
+                }
+              }
+              return index + 1;
+            })();
+          case postable.shita:
+            return (() => {
+              var index = 0;
+              var value = Math.max.apply(null, allocatedShitaLine);
+              if (value === 0) {
+                return allocatedShitaLine.length - msgSize * msgReturns + 1;
+              }
+              for (var i = 0; i <= allocatedShitaLine.length - msgSize * msgReturns; i++) {
+                if (allocatedShitaLine[i] <= value) {
+                  var check = (() => {
+                    for (var j = i; j < i + msgSize * msgReturns; j++) {
+                      if (allocatedShitaLine[j] > allocatedShitaLine[i]) {
+                        i = j;
+                        return false;
+                      }
+                    }
+                    return true;
+                  });
+                  
+                  if (check()) {
+                    value = allocatedShitaLine[i];
+                    index = i;
+                  }
+                }
+              }
+              return index + 1;
+            })();
+        }
+      })();
+      
+      // alloc
       for (var i = line; i < line + msgSize * msgReturns; i++) {
-        lfree(i - 1);
+        lalloc(i - 1);
         if (msgPos === postable.ue) {
-          ulfree(i - 1);
+          ulalloc(i - 1);
         }
         if (msgPos === postable.shita) {
-          slfree(i - 1);
+          slalloc(i - 1);
         }
+        $m.addClass('l' + i);
       }
-    });
-    
-    if (msgPos === postable.naka) {
-      //オーバーシュート
-      $m.css('transform', `translate3d(-${baseW + $m.width()*2 + 10}px, 0, 0)`);
-    } else {
-      // 静止
-      $m.css('transform', `translate3d(0, 0, 0)`)
-        .css('padding', 0)
-        .css('margin-left', `-${$m.width() / 2}px`);
-      setTimeout(msg => {
-        msg.remove();
+      
+      // free
+      var free = (() => {
+        for (var i = line; i < line + msgSize * msgReturns; i++) {
+          lfree(i - 1);
+          if (msgPos === postable.ue) {
+            ulfree(i - 1);
+          }
+          if (msgPos === postable.shita) {
+            slfree(i - 1);
+          }
+        }
+      });
+      
+      if (msgPos === postable.naka) {
+        //オーバーシュート
+        $m.css('transform', `translate3d(-${baseW + $m.width()*2 + 10}px, 0, 0)`);
+      } else {
+        // 静止
+        $m.css('transform', `translate3d(0, 0, 0)`)
+          .css('padding', 0)
+          .css('margin-left', `-${$m.width() / 2}px`);
+        setTimeout(msg => {
+          msg.remove();
+          free();
+        }, 5000, $m);
+      }
+      //アニメ停止で自動削除
+      $m.on('transitionend', ev => {
+        $(ev.target).remove();
         free();
-      }, 5000, $m);
-    }
-    //アニメ停止で自動削除
-    $m.on('transitionend', ev => {
-      $(ev.target).remove();
-      free();
-    });
+      });
+    }, 0);
   }
 
   var UTIL = {};
@@ -1119,9 +1121,9 @@
 
   function loadConfig() {
     var tryLoadValue = ((v, b) => {
-      b = !!b; 
+      b = !!b;
       var val = JSON.parse(localStorage.getItem(v));
-      if (val === null || (!b && val == '')) {
+      if (val === null || (!b && val === '')) {
         return false;
       } else {
         return true;
@@ -1182,26 +1184,6 @@
     else
       $('button.repeat').html('<i class="fa fa-arrow-right"></i>');
   }
-
-  // 対応外（ニコニコムービーメーカーとか）のURLを弾く
-  function getMovieInfo() {
-    var uri = location.href;
-    var uriArray = uri.split('/');
-    var movieId = "";
-    if (uri.endsWith('/'))
-      movieId = uriArray[uriArray.length - 2];
-    else
-      movieId = uriArray[uriArray.length - 1];
-    
-    // http://ext.nicovideo.jp/api/getthumbinfo/ がCORSで殺されるのクソすぎじゃないですか
-    return $.ajax({
-      type: 'GET',
-      url: 'http://crossorigin.me/' + INFO + movieId, // crossorigin.meが遅い…　ghippos.netでCORS proxyを立てるまである
-      crossDomain: true,
-      cache: false,
-      dataType: 'xml',
-    });
-  }
   
   function generateNGarray() {
     var regex = /\/(.*)\/(.*)\,/;
@@ -1219,7 +1201,12 @@
   }
   
   /** main というかエントリーポイント */
-  var initKusa5 = function () {
+  var initKusa5 = (() => {
+    if (apidata.flashvars.movie_type !== 'mp4') {
+      $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応）</p>')
+      return;
+    }
+    
     for (var i = 0; i < commentLines; i++) {
       allocatedLine[i] = 0;
       allocatedUeLine[i] = 0;
@@ -1227,158 +1214,140 @@
     }
     updateallocatedLine();
     
-    getMovieInfo().then(xml => {
-      var pack = [];
-      pack[0] = xml;
-      $(xml).find('movie_type').each(function (type) {
-        pack[1] = ($(this).text() === 'mp4');
+    generateNGarray();
+      
+    // プレミアム会員かどうか
+    // 本当はVita APIを使うべきなんだけどCORSで弾かれるんだよな
+    // まじでCORS死んでくれ頼む後生だから
+    if ($('#siteHeaderNotificationPremium').is(':hidden')) {
+      isPremium = true;
+    }
+    else {
+      if (!loadValue('Kusa5_fastInit') && !loadValue('Kusa5_noLimit')) {
+        // ニコニコ側のJSの反映が遅いときにうまく判定できないため
+        var mo = new MutationObserver(function () {
+          if ($('#siteHeaderNotificationPremium').is(':hidden')) {
+            isPremium = true;
+          }
+        });
+        var siteHeaderNotification = document.getElementById("siteHeaderNotification")
+        var options = { childList: true, subtree: true };
+        mo.observe(siteHeaderNotification, options);
+      }
+    }
+
+    $('.notify_update_flash_player').hide();
+    $('.playerContainer').hide();
+    if (loadValue('Kusa5_hidePlaylist'))
+      $('#playlist').hide();
+    $('#playerContainerSlideArea').attr('id', 'kusa5');
+    if (loadValue('Kusa5_showPageTop'))
+      $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
+    if ((isPremium || loadValue('Kusa5_noLimit')) && !loadValue('Kusa5_autoPlay')) {
+      $video.removeAttr('autoplay');
+      $video.attr({ poster: apidata.videoDetail.thumbnail });
+      var $playButton = $('<div id="kusa5_playbutton"><div><i class="fa fa-play"></i></div></div>');
+      $playButton.on('click', () => {
+        $video.get(0).play();
+        $('#kusa5_playbutton').remove();
       });
-      $(xml).find('thumbnail_url').each(function (type) {
-        pack[2] = $(this).text();
-      });
-      return pack;
-    }).then(pack => {
-      var isMP4 = pack[1];
-      if (!isMP4) {
-        $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応）</p>')
-        return;
-      } else {
-        generateNGarray();
-        
-        // プレミアム会員かどうか
-        // 本当はVita APIを使うべきなんだけどCORSで弾かれるんだよな
-        // まじでCORS死んでくれ頼む後生だから
-        if ($('#siteHeaderNotificationPremium').is(':hidden')) {
-          isPremium = true;
-        }
-        else {
-          if (!loadValue('Kusa5_fastInit') && !loadValue('Kusa5_noLimit')) {
-            // ニコニコ側のJSの反映が遅いときにうまく判定できないため
-            var mo = new MutationObserver(function () {
-              if ($('#siteHeaderNotificationPremium').is(':hidden')) {
-                isPremium = true;
-              }
-            });
-            var siteHeaderNotification = document.getElementById("siteHeaderNotification")
-            var options = { childList: true, subtree: true };
-            mo.observe(siteHeaderNotification, options);
-          }
-        }
-        
-        $('.notify_update_flash_player').hide();
-        $('.playerContainer').hide();
-        if (loadValue('Kusa5_hidePlaylist'))
-          $('#playlist').hide();
-        $('#playerContainerSlideArea').attr('id', 'kusa5');
-        if (loadValue('Kusa5_showPageTop'))
-          $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
-        if ((isPremium || loadValue('Kusa5_noLimit')) && !loadValue('Kusa5_autoPlay')) {
-          $video.removeAttr('autoplay');
-          $video.attr({ poster: pack[2] });
-          var $playButton = $('<div id="kusa5_playbutton"><div><i class="fa fa-play"></i></div></div>');
-          $playButton.on('click', () => {
-            $video.get(0).play();
-            $('#kusa5_playbutton').remove();
-          });
-          $('#kusa5').append($playButton);
-          $video.get(0).load();
-        }
-        
-        const kusa5 = $('#kusa5')
-          .append($video)
-          .append(ctrPanel());
-        
-        $('#kusa5_config').find('input').each((i, e) => {
-          if ($(e).attr('type') === 'checkbox') {
-            $(e).prop('checked', loadValue($(e).attr('name')));
-          }
-          if ($(e).attr('type') === 'number') {
-            $(e).prop('value', loadValue($(e).attr('name')));
-          }
-        });
-        $('#kusa5_config').find('textarea').each((i, e) => {
-          $(e).prop('value', loadValue($(e).attr('name')));
-        });
-        
-        if (loadValue('Kusa5_debug')) {
-          $('#kusa5').append('<div id="kusa5_debug" style="font-family: monospace;" />');
-          $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
-          $('#kusa5_debug').append('<p style="position:absolute;top:0;right:4px;color:#64FF64;">&#x23ec;</p>');
-          $('#kusa5_debug').append('<pre id="kusa5_lallocInfo" />');
-        }
-        
-        updateRepeat(true);
-        
-        $('#kusa5 button.rewind').click(ev => $video.get(0).currentTime = 0);
-        $('input[name=nicorate]').change(ev => {
-          localStorage.Kusa5_nicoRate =
-          $video.get(0).playbackRate = parseFloat($(ev.target).val());
-        });
-        $('input[value="' + localStorage.Kusa5_nicoRate + '"]').click();
-        
-        $('#kusa5 button.mute').on('click', ev => {
-          if ($video.get(0).muted) {
-            $video.get(0).muted = false;
-            $('#kusa5 button.mute').html('<i class="fa fa-volume-up"></i>');
-          } else {
-            $video.get(0).muted = true;
-            $('#kusa5 button.mute').html('<i class="fa fa-volume-off"></i>');
-          }
-        });
-        
-        $('#volume-slider').on('input', ev => {
-          localStorage.setItem('Kusa5_nicoVolume', ev.target.value);
-          updateSlider();
-        });
-        
-        $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
-        $('#kusa5 button.repeat').click(() => updateRepeat(false));
-        $('#kusa5 button.config').click(ev => {
-          $('#kusa5_config').show();
-          $('body').css('overflow', 'hidden');
-        });
-        
-        var promise = loadApiInfo(launchID).then(info => {
-          $video.attr('src', info.url);
-          $video.get(0).dataset.smid = launchID;
-          return info;
-        });
-        
-        if (isIframe)
-          return; // 以降はフォワードページのみの処理
-        
-        var timeDrag = false;  /* Drag status */
-        $('.progressBar.seek').mousedown(function (e) {
-          timeDrag = true;
-          updatebar(e);
-        });
-        $('.progressBar').mouseup(function (e) {
-          if (!timeDrag)
-            return;
-          timeDrag = false;
-          updatebar(e.pageX);
-        }).mousemove(e=> timeDrag && updatebar(e));
-        
-        // ボタン押された時の動作登録
-        var keyTbl = [];
-        keyTbl[32] = $video.videoToggle; //スペースキー
-        kusa5.keyup(e => {
-          if (!keyTbl[e.keyCode])
-            return;
-          keyTbl[e.keyCode]();
-          e.preventDefault();
-        });
-        kusa5.keydown(e => {
-          //ボタンの処理が登録されてたらブラウザの動作をうちけす
-          if (keyTbl[e.keyCode])
-            e.preventDefault();
-        });
-        
-        //メッセージ取得、文字流しとかのループイベント登録
-        promise.then(loadMsg);
+      $('#kusa5').append($playButton);
+      $video.get(0).load();
+    }
+
+    const kusa5 = $('#kusa5')
+      .append($video)
+      .append(ctrPanel());
+
+    $('#kusa5_config').find('input').each((i, e) => {
+      if ($(e).attr('type') === 'checkbox') {
+        $(e).prop('checked', loadValue($(e).attr('name')));
+      }
+      if ($(e).attr('type') === 'number') {
+        $(e).prop('value', loadValue($(e).attr('name')));
       }
     });
-  };
+    $('#kusa5_config').find('textarea').each((i, e) => {
+      $(e).prop('value', loadValue($(e).attr('name')));
+    });
+
+    if (loadValue('Kusa5_debug')) {
+      $('#kusa5').append('<div id="kusa5_debug" style="font-family: monospace;" />');
+      $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
+      $('#kusa5_debug').append('<p style="position:absolute;top:0;right:4px;color:#64FF64;">&#x23ec;</p>');
+      $('#kusa5_debug').append('<pre id="kusa5_lallocInfo" />');
+    }
+
+    updateRepeat(true);
+
+    $('#kusa5 button.rewind').click(ev => $video.get(0).currentTime = 0);
+    $('input[name=nicorate]').change(ev => {
+      localStorage.Kusa5_nicoRate =
+      $video.get(0).playbackRate = parseFloat($(ev.target).val());
+    });
+    $('input[value="' + localStorage.Kusa5_nicoRate + '"]').click();
+
+    $('#kusa5 button.mute').on('click', ev => {
+      if ($video.get(0).muted) {
+        $video.get(0).muted = false;
+        $('#kusa5 button.mute').html('<i class="fa fa-volume-up"></i>');
+      } else {
+        $video.get(0).muted = true;
+        $('#kusa5 button.mute').html('<i class="fa fa-volume-off"></i>');
+      }
+    });
+
+    $('#volume-slider').on('input', ev => {
+      localStorage.setItem('Kusa5_nicoVolume', ev.target.value);
+      updateSlider();
+    });
+
+    $('#kusa5 button.comment-hidden').click(ev => kusa5.toggleClass('comment-hidden'));
+    $('#kusa5 button.repeat').click(() => updateRepeat(false));
+    $('#kusa5 button.config').click(ev => {
+      $('#kusa5_config').show();
+      $('body').css('overflow', 'hidden');
+    });
+
+    var promise = loadApiInfo(launchID).then(info => {
+      $video.attr('src', info.url);
+      $video.get(0).dataset.smid = launchID;
+      return info;
+    });
+
+    if (isIframe)
+      return; // 以降はフォワードページのみの処理
+      
+    var timeDrag = false;  /* Drag status */
+    $('.progressBar.seek').mousedown(function (e) {
+      timeDrag = true;
+      updatebar(e);
+    });
+    $('.progressBar').mouseup(function (e) {
+      if (!timeDrag)
+        return;
+      timeDrag = false;
+      updatebar(e.pageX);
+    }).mousemove(e=> timeDrag && updatebar(e));
+      
+    // ボタン押された時の動作登録
+    var keyTbl = [];
+    keyTbl[32] = $video.videoToggle; //スペースキー
+    kusa5.keyup(e => {
+      if (!keyTbl[e.keyCode])
+        return;
+      keyTbl[e.keyCode]();
+      e.preventDefault();
+    });
+    kusa5.keydown(e => {
+      //ボタンの処理が登録されてたらブラウザの動作をうちけす
+      if (keyTbl[e.keyCode])
+        e.preventDefault();
+    });
+      
+    //メッセージ取得、文字流しとかのループイベント登録
+    promise.then(loadMsg);
+  });
   
   // init
   $('body').append($('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">'))
@@ -1387,7 +1356,7 @@
     var timer = setInterval(() => {
       // jQueryとUnderscore.jsが読み込み終わってる必要がある
       // Nico.CommonNotificationHeaderにアクセスできる状態ならプレミアム会員かどうかのチェックも終わっている？
-      if ($.isReady && _.VERSION !== '' && Nico.CommonNotificationHeader.userId !== '') {
+      if ($.isReady === true && _.VERSION !== '' && Nico.CommonNotificationHeader.userId !== '') {
         clearInterval(timer);
         initKusa5();
       }
