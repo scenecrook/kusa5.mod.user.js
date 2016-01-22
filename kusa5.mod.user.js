@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     32
+// @version     33
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -576,6 +576,14 @@
     float: right;
     background: white;
     border: none;
+  }
+  
+  /*
+  ニコニコ本家の軽微な修正
+  ******************************************************************************/
+  #videoHeader.menuOpened {
+    position: relative !important;
+    z-index: 1 !important;
   }
   `);
 
@@ -1264,8 +1272,7 @@
     var bar = $('#volume-bar')[0];
     var muted = loadValue('Kusa5_muted');
     $video.get(0).muted = muted;
-    console.log($video.get(0))
-    if (muted === true) {;
+    if (muted === true) {
       $('#kusa5 button.mute').html('<i class="fa fa-volume-off"></i>');
       slider.value = 0;
       bar.style.width = 0 + 'px';
