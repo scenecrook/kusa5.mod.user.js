@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     34
+// @version     35
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -54,12 +54,16 @@
       }
     },
     alloc: function(index) {
-      this.allocatedLine[index]++;
-      updateAllocatedLine();
+      if(index < this.allocatedLine.length) {
+        this.allocatedLine[index]++;
+        updateAllocatedLine();
+      }
     },
     free: function(index) {
-      this.allocatedLine[index]--;
-      updateAllocatedLine();
+      if(index < this.allocatedLine.length) {
+        this.allocatedLine[index]--;
+        updateAllocatedLine();
+      }
     }
   };
 
@@ -879,7 +883,7 @@
             })();
           case postable.naka:
             return (() => {
-              for (var i = 1; i <= 21 - msgSize * msgReturns; i++) {
+              for (var i = 1; i <= allLine.count() - msgSize * msgReturns; i++) {
                 if (hasRightSpace('.l' + i)) {
                   return i;
                 }
