@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     33
+// @version     34
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -23,13 +23,9 @@
   loadConfig();
   
   const ASKURL = 'http://flapi.nicovideo.jp/api/getflv?v=';
-  const THUMB = 'http://tn-skr3.smilevideo.jp/smile?i=';
-  const WATCH = 'http://www.nicovideo.jp/watch/';
   const THREAD = 'http://flapi.nicovideo.jp/api/getthreadkey?thread=';
-  const INFO = 'http://ext.nicovideo.jp/api/getthumbinfo/';
   const apidata = JSON.parse($('#watchAPIDataContainer').text());
   const launchID = apidata.videoDetail.v; // APIに与える識別子
-  const isIframe = window != parent;
   const commentLines = 21;
   const smallVirtualLines = commentLines;
   const mediumVirtualLines = (commentLines / 3) * 2;
@@ -38,70 +34,88 @@
   const mediumMsgSize = (localStorage.Kusa5_baseFontSize / 3) * 2;
   const largeMsgSize = localStorage.Kusa5_baseFontSize / 3;
   
-  var allocatedLine = [];
-  var allocatedUeLine = [];
-  var allocatedShitaLine = [];
+  // class LineManager
+  // Firefox45からclassのサポートが入るから早く正式版になってほしい
+  function LineManager(lines) {
+    this.allocatedLine = [];
+    for (var i = 0; i < lines; i++){
+      this.allocatedLine[i] = 0;
+    }
+  }
+  LineManager.prototype = {
+    count: function() {
+      return this.allocatedLine.length;
+    },
+    getLine: function(index) {
+      if (index === undefined) {
+        return this.allocatedLine;
+      } else {
+        return this.allocatedLine[index];
+      }
+    },
+    alloc: function(index) {
+      this.allocatedLine[index]++;
+      updateAllocatedLine();
+    },
+    free: function(index) {
+      this.allocatedLine[index]--;
+      updateAllocatedLine();
+    }
+  };
+
+  var allLine = new LineManager(commentLines);
+  var ueLine = new LineManager(commentLines);
+  var shitaLine = new LineManager(commentLines);
   var ngArray = [];
   
-  var updateallocatedLine = (() => {
+  var UTIL = {};
+  UTIL.sec2HHMMSS = function (sec) {
+      var sec_num = parseInt(sec, 10); // don't forget the second param
+      var hours = Math.floor(sec_num / 3600);
+      var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
+      var seconds = sec_num - (hours * 3600) - (minutes * 60);
+
+      if (hours   < 10) {hours   = "0"+hours;}
+      if (minutes < 10) {minutes = "0"+minutes;}
+      if (seconds < 10) {seconds = "0"+seconds;}
+      return (hours > 0? hours+':' :'') + minutes+':'+seconds;
+  };
+  UTIL.paddingRight = function (value, char, n) {
+    value += '';
+    for (; value.length < n; value += char);
+    return value;
+  };
+  
+  function updateAllocatedLine() {
     if (localStorage.Kusa5_debug) {
       var normalizeNum = (n => {
         return UTIL.paddingRight(n, ' ', 2);
       });
       var log = '';
       log += 'all\n';
-      for (var i = 0; i < commentLines / 3; i++) {
-        log += UTIL.paddingRight('.l' + normalizeNum(i + 1) + ': ' + allocatedLine[i], ' ', 9);
-        log += UTIL.paddingRight('.l' + normalizeNum(i + 8) + ': ' + allocatedLine[i + 7], ' ', 9);
-        log += UTIL.paddingRight('.l' + normalizeNum(i + 15) + ': ' + allocatedLine[i + 14], ' ', 9);
+      for (var i = 0; i < allLine.count() / 3; i++) {
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 1) + ': ' + allLine.getLine(i), ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 8) + ': ' + allLine.getLine(i + 7), ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 15) + ': ' + allLine.getLine(i + 14), ' ', 9);
         log += '\n';
       }
-      
       log += 'ue\n';
-      for (var i = 0; i < commentLines / 3; i++) {
-        log += UTIL.paddingRight('.l' + normalizeNum(i + 1) + ': ' + allocatedUeLine[i], ' ', 9);
-        log += UTIL.paddingRight('.l' + normalizeNum(i + 8) + ': ' + allocatedUeLine[i + 7], ' ', 9);
-        log += UTIL.paddingRight('.l' + normalizeNum(i + 15) + ': ' + allocatedUeLine[i + 14], ' ', 9);
+      for (var i = 0; i < ueLine.count() / 3; i++) {
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 1) + ': ' + ueLine.getLine(i), ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 8) + ': ' + ueLine.getLine(i + 7), ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 15) + ': ' + ueLine.getLine(i + 14), ' ', 9);
         log += '\n';
       }
-      
       log += 'shita\n';
-      for (var i = 0; i < commentLines / 3; i++) {
-        log += UTIL.paddingRight('.l' + normalizeNum(i + 1) + ': ' + allocatedShitaLine[i], ' ', 9);
-        log += UTIL.paddingRight('.l' + normalizeNum(i + 8) + ': ' + allocatedShitaLine[i + 7], ' ', 9);
-        log += UTIL.paddingRight('.l' + normalizeNum(i + 15) + ': ' + allocatedShitaLine[i + 14], ' ', 9);
+      for (var i = 0; i < shitaLine.count() / 3; i++) {
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 1) + ': ' + shitaLine.getLine(i), ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 8) + ': ' + shitaLine.getLine(i + 7), ' ', 9);
+        log += UTIL.paddingRight('.l' + normalizeNum(i + 15) + ': ' + shitaLine.getLine(i + 14), ' ', 9);
         log += '\n';
       }
       $('#kusa5_lallocInfo').html(log);
     }
-  });
-
-  var lalloc = function (l) {
-    allocatedLine[l] += 1;
-    updateallocatedLine();
-  };
-  var lfree = function (l) {
-    allocatedLine[l] -= 1;
-    updateallocatedLine();
-  };
-  
-  var ulalloc = function (l) {
-    allocatedUeLine[l] += 1;
-    updateallocatedLine();
-  };
-  var ulfree = function (l) {
-    allocatedUeLine[l] -= 1;
-    updateallocatedLine();
-  };
-  
-  var slalloc = function (l) {
-    allocatedShitaLine[l] += 1;
-    updateallocatedLine();
-  };
-  var slfree = function (l) {
-    allocatedShitaLine[l] -= 1;
-    updateallocatedLine();
-  };
+  }
 
   function generateLines(height, lines) {
     var result = '';
@@ -109,7 +123,7 @@
       result += '#kusa5 .msg.l'+ i +' { top: calc((' + height + 'px / '+ lines +') * '+ (i - 1) +'); }\n';
     }
     return result;
-  };
+  }
 
   addGlobalStyle(`
   * {
@@ -256,7 +270,7 @@
 
   #volume-bar {
     -webkit-appearance: none;
-    background: #008ee0;
+    background: #0078E7;
     border: 0;
     height: 5px;
     width: 0px;
@@ -595,11 +609,7 @@
       // レート情報の記憶
       $('input[value="'+ localStorage.Kusa5_nicoRate +'"]').click();
       ev.target.playbackRate = localStorage.Kusa5_nicoRate;
-      if (!isIframe)
-        return;
-      // バッファー再生用のプレーヤーは処理を重くしないためにrata1
-      ev.target.playbackRate = 1;
-      $(ev.target).off().prop('muted', true);
+      updateSlider();
     });
 
   $video.videoToggle = function() {
@@ -641,7 +651,7 @@
       FullScreen.req($('#kusa5')[0]);
 
   function ngfilter(ch) {
-    if (ch.t < 100) // 1秒以内。いわゆる0秒コメ
+    if (loadValue("Kusa5_suppress0secComment") && ch.t < 100) // 1秒以内。いわゆる0秒コメ
       return false;
     // NGワード
     if (loadValue('Kusa5_ngKeyword') === '') { return true; }
@@ -735,7 +745,6 @@
             var bw = 100 * bufTime / v.duration;
             $('.progressBar.seek .bufferbar').css('width', bw + '%');
           }
-          
         }, updateInterval));
       })
     });
@@ -859,10 +868,10 @@
           case postable.ue:
             return (() => {
               var index = 0;
-              var value = Math.max.apply(null, allocatedUeLine);
-              for (var i = 0; i <= allocatedUeLine.length - msgSize * msgReturns; i++) {
-                if (allocatedUeLine[i] < value) {
-                  value = allocatedUeLine[i];
+              var value = Math.max.apply(null, ueLine.getLine());
+              for (var i = 0; i <= ueLine.count() - msgSize * msgReturns; i++) {
+                if (ueLine.getLine(i) < value) {
+                  value = ueLine.getLine(i);
                   index = i;
                 }
               }
@@ -876,10 +885,10 @@
                 }
               }
               var index = 0;
-              var value = Math.max.apply(null, allocatedLine);
-              for (var i = 0; i <= allocatedLine.length - msgSize * msgReturns; i++) {
-                if (allocatedLine[i] < value) {
-                  value = allocatedLine[i];
+              var value = Math.max.apply(null, allLine.getLine());
+              for (var i = 0; i <= allLine.count() - msgSize * msgReturns; i++) {
+                if (allLine.getLine(i) < value) {
+                  value = allLine.getLine(i);
                   index = i;
                 }
               }
@@ -888,15 +897,15 @@
           case postable.shita:
             return (() => {
               var index = 0;
-              var value = Math.max.apply(null, allocatedShitaLine);
+              var value = Math.max.apply(null, shitaLine.getLine());
               if (value === 0) {
-                return allocatedShitaLine.length - msgSize * msgReturns + 1;
+                return shitaLine.count() - msgSize * msgReturns + 1;
               }
-              for (var i = 0; i <= allocatedShitaLine.length - msgSize * msgReturns; i++) {
-                if (allocatedShitaLine[i] <= value) {
+              for (var i = 0; i <= shitaLine.count() - msgSize * msgReturns; i++) {
+                if (shitaLine.getLine(i) <= value) {
                   var check = (() => {
                     for (var j = i; j < i + msgSize * msgReturns; j++) {
-                      if (allocatedShitaLine[j] > allocatedShitaLine[i]) {
+                      if (shitaLine.getLine(j) > shitaLine.getLine(i)) {
                         i = j;
                         return false;
                       }
@@ -905,7 +914,7 @@
                   });
                   
                   if (check()) {
-                    value = allocatedShitaLine[i];
+                    value = shitaLine.getLine(i);
                     index = i;
                   }
                 }
@@ -917,12 +926,12 @@
       
       // alloc
       for (var i = line; i < line + msgSize * msgReturns; i++) {
-        lalloc(i - 1);
+        allLine.alloc(i - 1);
         if (msgPos === postable.ue) {
-          ulalloc(i - 1);
+          ueLine.alloc(i - 1);
         }
         if (msgPos === postable.shita) {
-          slalloc(i - 1);
+          shitaLine.alloc(i - 1);
         }
         $m.addClass('l' + i);
       }
@@ -930,12 +939,12 @@
       // free
       var free = (() => {
         for (var i = line; i < line + msgSize * msgReturns; i++) {
-          lfree(i - 1);
+          allLine.free(i - 1);
           if (msgPos === postable.ue) {
-            ulfree(i - 1);
+            ueLine.free(i - 1);
           }
           if (msgPos === postable.shita) {
-            slfree(i - 1);
+            shitaLine.free(i - 1);
           }
         }
       });
@@ -961,26 +970,7 @@
     }, 0);
   }
 
-  var UTIL = {};
-  UTIL.sec2HHMMSS = function (sec) {
-      var sec_num = parseInt(sec, 10); // don't forget the second param
-      var hours = Math.floor(sec_num / 3600);
-      var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
-      var seconds = sec_num - (hours * 3600) - (minutes * 60);
-
-      if (hours   < 10) {hours   = "0"+hours;}
-      if (minutes < 10) {minutes = "0"+minutes;}
-      if (seconds < 10) {seconds = "0"+seconds;}
-      return (hours > 0? hours+':' :'') + minutes+':'+seconds;
-  };
-  UTIL.paddingRight = function (value, char, n) {
-    value += '';
-    for (; value.length < n; value += char);
-    return value;
-  };
-
   function rateForm() {
-
     //var rd = [1, 1.2, 1.5, 2, 2.2, 2.5, 3]
     var rd = [1, 1.3463246851125779, 1.6678900230322302,
       1.9680012082762555, 2.249342814692259, 2.514125064795459,
@@ -1065,6 +1055,7 @@
       <p style="display:inline-block;">正規表現が使用できます（行区切り）</p>
       <button id="Kusa5_regexReset"><i class="fa fa-repeat"></i> リセット</button>
       <div><textarea id="Kusa5_regex" name="Kusa5_ngKeyword"></textarea></div>
+      <input type="checkbox" name="Kusa5_suppress0secComment"> <span>0秒コメントをNGにする</span>
     </div>
   </div>
   `;
@@ -1147,6 +1138,7 @@
     if (!tryLoadValue('Kusa5_debug')) { localStorage.Kusa5_debug = false; }
     if (!tryLoadValue('Kusa5_noLimit')) { localStorage.Kusa5_noLimit = false; }
     if (!tryLoadValue('Kusa5_ngKeyword', true)) { localStorage.Kusa5_ngKeyword = JSON.stringify(DEFAULT_NG()); }
+    if (!tryLoadValue('Kusa5_suppress0secComment')) { localStorage.Kusa5_suppress0secComment = true; }
   }
   
   function updateSlider() {
@@ -1215,12 +1207,6 @@
       return;
     }
     
-    for (var i = 0; i < commentLines; i++) {
-      allocatedLine[i] = 0;
-      allocatedUeLine[i] = 0;
-      allocatedShitaLine[i] = 0;
-    }
-    updateallocatedLine();
     generateNGarray();
     
     $('.notify_update_flash_player').hide();
@@ -1263,8 +1249,9 @@
       $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
       $('#kusa5_debug').append('<p style="position:absolute;top:0;right:4px;color:#64FF64;">&#x23ec;</p>');
       $('#kusa5_debug').append('<pre id="kusa5_lallocInfo" />');
+      updateAllocatedLine();
     }
-
+    
     updateRepeat(true);
     
     updateSlider();
@@ -1321,9 +1308,6 @@
       return info;
     });
 
-    if (isIframe)
-      return; // 以降はフォワードページのみの処理
-      
     var timeDrag = false;  /* Drag status */
     $('.progressBar.seek').mousedown(function (e) {
       timeDrag = true;
@@ -1362,7 +1346,7 @@
     var timer = setInterval(() => {
       // jQueryとUnderscore.jsが読み込み終わってる必要がある
       // Nico.CommonNotificationHeaderにアクセスできる状態ならプレミアム会員かどうかのチェックも終わっている？
-      if ($.isReady === true && _.VERSION !== '' && Nico.CommonNotificationHeader.userId !== '') {
+      if ($.isReady === true && _.VERSION !== '') {
         clearInterval(timer);
         initKusa5();
       }
