@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     35
+// @version     36
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -1194,12 +1194,14 @@
     var ng = loadValue('Kusa5_ngKeyword');
     _.each(ng.split('\n'), v => {
       var m = v.match(regex);
-      var a = m[1].replace('\/', '/').replace('//', '/');
-      var b = m[2];
-      if (b != '') {
-        ngArray.push(new RegExp(a, b));
-      } else {
-        ngArray.push(new RegExp(a));
+      if(m != null) {
+        var a = m[1].replace('\/', '/').replace('//', '/');
+        var b = m[2];
+        if (b != '') {
+          ngArray.push(new RegExp(a, b));
+        } else {
+          ngArray.push(new RegExp(a));
+        }
       }
     });
   }
