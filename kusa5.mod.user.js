@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     36
+// @version     37
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -122,10 +122,15 @@
     }
   }
 
-  function generateLines(height, lines) {
+  function generateLines(height, lines, force) {
     var result = '';
     for (var i = lines; i > 0; i--) {
-      result += '#kusa5 .msg.l'+ i +' { top: calc((' + height + 'px / '+ lines +') * '+ (i - 1) +'); }\n';
+      result += '#kusa5 .msg.l'+ i +' { top: calc((' + height + 'px / '+ lines +') * '+ (i - 1) +')';
+      if(force === true){
+        result += ' !important; }\n';
+      } else {
+        result += '; }\n';
+      }
     }
     return result;
   }
@@ -581,7 +586,8 @@
     margin: 0;
   }
   
-  #kusa5_config > .kusa5box > div > input[type="number"] {
+  #kusa5_config > .kusa5box > div > input[type="number"],
+  #kusa5_config > .kusa5box > div > div > input[type="number"] {
     width: 4rem;
   }
   
@@ -606,6 +612,35 @@
   }
   `);
 
+  // ユーザー定義CSS
+  // プレーヤーサイズ
+  if(loadValue('Kusa5_useUserPlayerSize')) {
+    const width = loadValue('Kusa5_useUserPlayerWidth');
+    const height = loadValue('Kusa5_useUserPlayerHeight');
+    addGlobalStyle(`
+    #kusa5 {
+      width: ${width}px !important;
+      height: ${height}px !important;
+    }
+    #kusa5 .msg {
+      font-size: calc(${height}px / `+ mediumMsgSize +`) !important;
+      height: calc(${height}px / `+ mediumVirtualLines +`) !important;
+      line-height: ` + (height / mediumVirtualLines) + `px !important;
+    }
+    #kusa5 .msg.small {
+      font-size: calc(${height}px / `+ smallMsgSize +`) !important;
+      height: calc(${height}px / `+ smallVirtualLines +`) !important;
+      line-height: ` + (height / smallVirtualLines) + `px !important;
+    }
+    #kusa5 .msg.big {
+      font-size: calc(${height}px / `+ largeMsgSize +`) !important;
+      height: calc(${height}px / `+ largeVirtualLines +`) !important;
+      line-height: ` + (height / largeVirtualLines) + `px !important;
+    }
+    ` + generateLines(height, commentLines, true) + `
+    `);
+  }
+  
   const $video = $(`<video type="video/mp4"'
         codecs="avc1.42E01E, mp4a.40.2"
         autoplay muted />`)
@@ -1045,9 +1080,14 @@
         <p>値を大きくするとコメントが小さくなる</p>
         ( プレーヤーの高さ ÷ <input type="number" name="Kusa5_baseFontSize" min="21"> ) px
       </div>
-      <div>
+      <div class="mb1rem">
         <p>コメントイベントの最短発火間隔</p>
         <input type="number" name="Kusa5_throttleComment" min="0"> ms
+      </div>
+      <div>
+        <input type="checkbox" name="Kusa5_useUserPlayerSize"> <span>プレーヤーサイズを固定する</span>
+        <div>幅 <input type="number" name="Kusa5_useUserPlayerWidth" min="0"> px</div>
+        <div>高さ <input type="number" name="Kusa5_useUserPlayerHeight" min="0"> px</div>
       </div>
     </div>
     <div class="kusa5box">
@@ -1148,6 +1188,9 @@
     if (!tryLoadValue('Kusa5_noLimit')) { localStorage.Kusa5_noLimit = false; }
     if (!tryLoadValue('Kusa5_ngKeyword', true)) { localStorage.Kusa5_ngKeyword = JSON.stringify(DEFAULT_NG()); }
     if (!tryLoadValue('Kusa5_suppress0secComment')) { localStorage.Kusa5_suppress0secComment = true; }
+    if (!tryLoadValue('Kusa5_useUserPlayerSize')) { localStorage.Kusa5_useUserPlayerSize = false; }
+    if (!tryLoadValue('Kusa5_useUserPlayerWidth')) { localStorage.Kusa5_useUserPlayerWidth = 854; }
+    if (!tryLoadValue('Kusa5_useUserPlayerHeight')) { localStorage.Kusa5_useUserPlayerHeight = 480; }
   }
   
   function updateSlider() {
