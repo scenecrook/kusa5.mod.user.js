@@ -71,6 +71,7 @@
   var ueLine = new LineManager(commentLines);
   var shitaLine = new LineManager(commentLines);
   var ngArray = [];
+  var onSeek = false;
   
   var UTIL = {};
   UTIL.sec2HHMMSS = function (sec) {
@@ -673,6 +674,7 @@
       .sortBy(c => c.t);
   }
 
+  var lastCommentTime = 0;
   function loadMsg(info) {
     return $.ajax({
       type: 'GET',
@@ -726,16 +728,19 @@
         data => console.log('メッセージロード失敗', data)
       ).done(chats => {
         // 時間イベントの発火で、対象メッセージがあれば流す
-        var lastT = 0;
+        
         // 次の動画への繊維などで複数回登録させるのでoff()
         $video.off('timeupdate').on('timeupdate', _.throttle(ev => {
-          // chat.vpos is 1/100 sec.
-          var v = ev.target;
-          var t = Math.round(v.currentTime * 100);
-          chats.filter(ch => lastT < ch.t && ch.t < t)
-            .forEach(_.throttle(marqueeMsg, loadValue('Kusa5_throttleComment')));
-          lastT = t;//更新
-
+          if (!onSeek) {
+            // chat.vpos is 1/100 sec.
+            var v = ev.target;
+            var t = Math.round(v.currentTime * 100);
+            chats.filter(ch => lastCommentTime < ch.t && ch.t < t)
+              .forEach(_.throttle(marqueeMsg, loadValue('Kusa5_throttleComment')));
+            lastCommentTime = t;//更新
+          } else {
+            lastCommentTime = Math.round(v.currentTime * 100) + 1000;
+          }
           // ついでに動画の進捗バーを更新
           var w = 100 * v.currentTime / v.duration; //in %
           $('.progressBar.seek .mainbar').css('width', w+'%');
@@ -1313,18 +1318,24 @@
       $video.get(0).dataset.smid = launchID;
       return info;
     });
-
+    
+    var timeout;
     var timeDrag = false;  /* Drag status */
     $('.progressBar.seek').mousedown(function (e) {
+      onSeek = true;
       timeDrag = true;
       updatebar(e);
     });
     $('.progressBar').mouseup(function (e) {
       if (!timeDrag)
         return;
+      timeout = setTimeout(() => onSeek = false, 1000);
       timeDrag = false;
       updatebar(e.pageX);
-    }).mousemove(e=> timeDrag && updatebar(e));
+    }).mousemove(e=> {
+      if (timeDrag) { clearTimeout(timeout); }
+      timeDrag && updatebar(e);
+    });
       
     // ボタン押された時の動作登録
     var keyTbl = [];
