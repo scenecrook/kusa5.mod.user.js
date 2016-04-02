@@ -236,6 +236,7 @@
     opacity: 1 !important;
     transition: all 0.3s ease-out; 
   }
+  
   .controle-panel .btn,
   input+label {
     padding: 0;
@@ -406,6 +407,28 @@
     width: 100%;
     height: 100%;
   }
+  
+  #kusa5:-moz-full-screen .controle-panel {
+    height: 5px !important;
+    opacity: 0.666 !important;
+    transition: all 0.3s ease-out !important;
+  }
+  #kusa5:-webkit-full-screen .controle-panel {
+    height: 5px !important;
+    opacity: 0.666 !important;
+    transition: all 0.3s ease-out !important;
+  }
+  #kusa5:-moz-full-screen .controle-panel.controle-panel-show {
+    height: 46px !important; /* 表示 */
+    opacity: 1 !important;
+    transition: all 0.3s ease-out !important;
+  }
+  #kusa5:-webkit-full-screen .controle-panel.controle-panel-show {
+    height: 46px !important; /* 表示 */
+    opacity: 1 !important;
+    transition: all 0.3s ease-out !important;
+  }
+  
   /*
   レスポンシブ
   ******************************************************************************/
@@ -673,6 +696,9 @@
     $('head').append(styleSeet);
   }
 
+  var mousePosition = null;
+  var controlPanelTimeout = null;
+
   const FullScreen = {};
   FullScreen.isOpen = () =>
     document.mozFullScreen || document.webkitIsFullScreen ||
@@ -685,10 +711,38 @@
     !!document.mozCancelFullScreen && document.mozCancelFullScreen() ||
     !!document.cancelFullScreen && document.cancelFullScreen() ||
     !!document.webkitCancelFullScreen && document.webkitCancelFullScreen();
-  FullScreen.toggle = () =>
-    FullScreen.isOpen() ?
-      FullScreen.cancel() :
+  FullScreen.toggle = () => {
+    if(FullScreen.isOpen()){
+      FullScreen.cancel();
+      
+      if(controlPanelTimeout != null) {
+        clearTimeout(controlPanelTimeout);
+      }
+      $('#kusa5 .controle-panel.controle-panel-show').removeClass('controle-panel-show');
+      mousePosition = null;
+      controlPanelTimeout = null;
+    } else {
       FullScreen.req($('#kusa5')[0]);
+      
+      $video.mousemove(e => {
+        if(mousePosition === null) {
+          mousePosition = e;
+          return;
+        }
+        
+        if(e.pageX != mousePosition.pageX || e.pageY != mousePosition.pageY) {
+          if(controlPanelTimeout != null) {
+            clearTimeout(controlPanelTimeout);
+          }
+          mousePosition = e;
+          $('#kusa5 .controle-panel').addClass('controle-panel-show');
+          controlPanelTimeout = setTimeout(() => {
+            $('#kusa5 .controle-panel.controle-panel-show').removeClass('controle-panel-show');
+          }, 5000);
+        }
+      });
+    }
+  };
 
   function ngfilter(ch) {
     if (loadValue("Kusa5_suppress0secComment") && ch.t < 100) // 1秒以内。いわゆる0秒コメ
