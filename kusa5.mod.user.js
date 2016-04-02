@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     37
+// @version     38
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // ==/UserScript==
@@ -657,11 +657,11 @@
     var v = $video[0];  
     if(v.paused === true) {
       v.play();
-      playPauseButton.innerHTML = '<i class="fa fa-play"></i>';
+      playPauseButton.innerHTML = '<i class="fa fa-pause"></i>';
       $('#kusa5_playbutton').remove();
     }else {
       v.pause();
-      playPauseButton.innerHTML = '<i class="fa fa-pause"></i>';
+      playPauseButton.innerHTML = '<i class="fa fa-play"></i>';
     }
   };
 
@@ -1275,8 +1275,8 @@
       $video.attr({ poster: apidata.videoDetail.thumbnail });
       var $playButton = $('<div id="kusa5_playbutton"><div><i class="fa fa-play"></i></div></div>');
       $playButton.on('click', () => {
-        $video.get(0).play();
         $('#kusa5_playbutton').remove();
+        $video.videoToggle();
       });
       $('#kusa5').append($playButton);
       $video.get(0).load();
@@ -1285,6 +1285,11 @@
     const kusa5 = $('#kusa5')
       .append($video)
       .append(ctrPanel());
+
+    if($video.get(0).autoplay) {
+      var playPauseButton = document.getElementsByClassName('btn toggle play')[0];
+      playPauseButton.innerHTML = '<i class="fa fa-pause"></i>';
+    }
 
     $('#kusa5_config').find('input').each((i, e) => {
       if ($(e).attr('type') === 'checkbox') {
