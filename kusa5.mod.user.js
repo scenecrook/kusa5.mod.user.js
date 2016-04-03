@@ -5,6 +5,7 @@
 // @version     38
 // @grant       none
 // @description ニコ動html5表示（改造版）
+// @license     MIT License
 // ==/UserScript==
 
 //----------------------------------------------------------
