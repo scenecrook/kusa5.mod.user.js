@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     38
+// @version     39
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -72,7 +72,6 @@
   var ueLine = new LineManager(commentLines);
   var shitaLine = new LineManager(commentLines);
   var ngArray = [];
-  var onSeek = false;
   
   var UTIL = {};
   UTIL.sec2HHMMSS = function (sec) {
@@ -821,16 +820,12 @@
         
         // 次の動画への繊維などで複数回登録させるのでoff()
         $video.off('timeupdate').on('timeupdate', _.throttle(ev => {
-          if (!onSeek) {
-            // chat.vpos is 1/100 sec.
-            var v = ev.target;
-            var t = Math.round(v.currentTime * 100);
-            chats.filter(ch => lastCommentTime < ch.t && ch.t < t)
-              .forEach(_.throttle(marqueeMsg, loadValue('Kusa5_throttleComment')));
-            lastCommentTime = t;//更新
-          } else {
-            lastCommentTime = Math.round(v.currentTime * 100) + 1000;
-          }
+          // chat.vpos is 1/100 sec.
+          var v = ev.target;
+          var t = Math.round(v.currentTime * 100);
+          chats.filter(ch => lastCommentTime < ch.t && ch.t < t)
+            .forEach(_.throttle(marqueeMsg, loadValue('Kusa5_throttleComment')));
+          lastCommentTime = t;//更新
           // ついでに動画の進捗バーを更新
           var w = 100 * v.currentTime / v.duration; //in %
           $('.progressBar.seek .mainbar').css('width', w+'%');
@@ -1273,7 +1268,9 @@
     var ratio = Math.min(1, Math.max(0, offset / seekBar.width()));
     //Update bar and video currenttime
     mainBar.css('width', (ratio * 100)+'%');
-    $video[0].currentTime = $video[0].duration * ratio;
+    var t = $video[0].duration * ratio;
+    $video[0].currentTime = t;
+    lastCommentTime = Math.round((t + 1) * 100);
     return true;
   }
 
@@ -1422,21 +1419,17 @@
       return info;
     });
     
-    var timeout;
     var timeDrag = false;  /* Drag status */
     $('.progressBar.seek').mousedown(function (e) {
-      onSeek = true;
       timeDrag = true;
       updatebar(e);
     });
     $('.progressBar').mouseup(function (e) {
       if (!timeDrag)
         return;
-      timeout = setTimeout(() => onSeek = false, 1000);
       timeDrag = false;
       updatebar(e.pageX);
     }).mousemove(e=> {
-      if (timeDrag) { clearTimeout(timeout); }
       timeDrag && updatebar(e);
     });
       
