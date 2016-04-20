@@ -404,8 +404,8 @@
   #kusa5:-moz-full-screen .msg {font-size: 4em; }
   #kusa5:-webkit-full-screen .msg {font-size: 4em; } 
   #kusa5:-webkit-full-screen {
-    width: 100%;
-    height: 100%;
+    width: 100% !important;
+    height: 100% !important;
   }
   
   #kusa5:-moz-full-screen .controle-panel {
