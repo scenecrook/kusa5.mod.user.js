@@ -37,36 +37,41 @@
   
   // class LineManager
   // Firefox45からclassのサポートが入るから早く正式版になってほしい
-  function LineManager(lines) {
-    this.allocatedLine = [];
-    for (var i = 0; i < lines; i++){
-      this.allocatedLine[i] = 0;
+  // Firefoxのstableが45になったのでclassに書き換えた　ESRも45だし多少はね？
+  class LineManager {
+    constructor(lines) {
+      this.allocatedLine = [];
+      for (var i = 0; i < lines; i++){
+        this.allocatedLine[i] = 0;
+      }
     }
-  }
-  LineManager.prototype = {
-    count: function() {
+    
+    count() {
       return this.allocatedLine.length;
-    },
-    getLine: function(index) {
+    }
+    
+    getLine(index) {
       if (index === undefined) {
         return this.allocatedLine;
       } else {
         return this.allocatedLine[index];
       }
-    },
-    alloc: function(index) {
+    }
+    
+    alloc(index) {
       if(index < this.allocatedLine.length) {
         this.allocatedLine[index]++;
         updateAllocatedLine();
       }
-    },
-    free: function(index) {
+    }
+    
+    free(index) {
       if(index < this.allocatedLine.length) {
         this.allocatedLine[index]--;
         updateAllocatedLine();
       }
     }
-  };
+  }
 
   var allLine = new LineManager(commentLines);
   var ueLine = new LineManager(commentLines);
