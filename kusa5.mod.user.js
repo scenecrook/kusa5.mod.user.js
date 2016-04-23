@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     39
+// @version     40
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -666,7 +666,7 @@
   
   const $video = $(`<video type="video/mp4"'
         codecs="avc1.42E01E, mp4a.40.2"
-        autoplay muted />`)
+        autoplay muted preload="auto" />`)
     .on('pause', ev => localStorage.Kusa5_nicoRate = ev.target.playbackRate)
     .on('play',  ev => {
       // レート情報の記憶
