@@ -25,6 +25,13 @@
   loadConfig();
   
   /*
+  Update
+  ******************************************************************************/
+  if(loadValue('Kusa5_lastVersion') !== GM_info.script.version) {
+    //TODO: どうしても互換性が無くなってしまったときのアップデート処理
+  }
+  
+  /*
   Class
   ******************************************************************************/
   // class LineManager
@@ -729,7 +736,7 @@
   const CONFIG_OVERLAY = `
   <div id="kusa5_config">
     <button id="kusa5_config_close">✕</button>
-    <p class="kusa5h1">Kusa5.mod config</p>
+    <p class="kusa5h1">Kusa5.mod config <span style="font-size:0.66em;">version.${GM_info.script.version}</span></p>
     <p>一部の設定はページリロードで反映されます</p>
     <div class="kusa5box">
       <p>全般</p>
@@ -832,6 +839,7 @@
   }
 
   function loadConfig() {
+    if (!tryLoadValue('Kusa5_lastVersion')) { localStorage.Kusa5_lastVersion = GM_info.script.version; }
     if (!tryLoadValue('Kusa5_nicoVolume')) { localStorage.Kusa5_nicoVolume = 50; }
     if (!tryLoadValue('Kusa5_muted')) { localStorage.Kusa5_muted = false; }
     if (!tryLoadValue('Kusa5_nicoRate')) { localStorage.Kusa5_nicoRate = 1; }
