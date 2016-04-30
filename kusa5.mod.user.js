@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     40
+// @version     41
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -93,7 +93,7 @@
         if(this.controlPanelTimeout !== null || this.controlPanelTimeout !== undefined) {
           clearTimeout(this.controlPanelTimeout);
         }
-        $('#kusa5 .controle-panel.controle-panel-show').removeClass('controle-panel-show');
+        $('#kusa5 .control-panel.control-panel-show').removeClass('control-panel-show');
         this.mousePosition = null;
         this.controlPanelTimeout = null;
       } else {
@@ -110,9 +110,9 @@
               clearTimeout(this.controlPanelTimeout);
             }
             this.mousePosition = e;
-            $('#kusa5 .controle-panel').addClass('controle-panel-show');
+            $('#kusa5 .control-panel').addClass('control-panel-show');
             this.controlPanelTimeout = setTimeout(() => {
-              $('#kusa5 .controle-panel.controle-panel-show').removeClass('controle-panel-show');
+              $('#kusa5 .control-panel.control-panel-show').removeClass('control-panel-show');
             }, 5000);
           }
         });
@@ -313,9 +313,9 @@
           // ついでに動画の進捗バーを更新
           var w = 100 * v.currentTime / v.duration; //in %
           $('.progressBar.seek .mainbar').css('width', w+'%');
-          $('.controle-panel .current')
+          $('.control-panel .current')
             .text(Util.sec2HHMMSS(v.currentTime));
-          $('.controle-panel .duration')
+          $('.control-panel .duration')
             .text(Util.sec2HHMMSS(v.duration));
           
           if (v.buffered.length !== 0) {
@@ -625,15 +625,15 @@
   /*
   Control panel
   ******************************************************************************/
-  const CONTROLE_PANEL = `
-  <div class="controle-panel">
+  const CONTROL_PANEL = `
+  <div class="control-panel">
     <div class="progressBar seek">
       <span class="bufferbar"/>
       <span class="mainbar"/>
     </div>
     <button class="btn rewind"><i class="fa fa-fast-backward"></i></button>
     <button class="btn toggle play"><i class="fa fa-play"></i></button>
-    ${rateForm() }
+    ${rateForm()}
     <button class="btn full r"><i class="fa fa-arrows-alt"></i></button>
     <button class="btn config r"><i class="fa fa-cog"></i></button>
     <button class="btn comment-hidden r"><i class="fa fa-comment"></i></button>
@@ -651,7 +651,7 @@
   </div>`;
 
   function ctrPanel() {
-    var $panel = $(CONTROLE_PANEL);
+    var $panel = $(CONTROL_PANEL);
     $panel.find('.btn.full').click(FullScreen.toggle);
     $panel.find('.btn.toggle').click($video.videoToggle);
     return $panel;
@@ -1112,7 +1112,7 @@
   /*
   コントロールパネル関係
   ******************************************************************************/
-  .controle-panel {
+  .control-panel {
     z-index: 9999;
     color: #fff;
     text-shadow: 2px 1px #000;
@@ -1127,13 +1127,13 @@
     overflow: hidden;
     cursor: default;
   }
-  #kusa5:hover .controle-panel {
+  #kusa5:hover .control-panel {
     height: 46px !important; /* 表示 */
     opacity: 1 !important;
     transition: all 0.3s ease-out; 
   }
   
-  .controle-panel .btn,
+  .control-panel .btn,
   input+label {
     padding: 0;
     color: #fff;
@@ -1141,30 +1141,30 @@
     border: none;
     background-color: transparent;
   }
-  .controle-panel > .btn {
+  .control-panel > .btn {
     width: 24px;
     float: left;
   }
-  .controle-panel .r {float: right;}
+  .control-panel .r {float: right;}
 
-  .controle-panel .progressBar {
+  .control-panel .progressBar {
     cursor: pointer;
     position: relative;
     height: 14px;
     background-color: #606060;
     width: 100%;
   }
-  .controle-panel .progressBar span {
+  .control-panel .progressBar span {
     position: absolute;
     top: 0;
     left: 0;
     width: 0;
     height: 100%;
   }
-  .controle-panel .progressBar.seek .mainbar {
+  .control-panel .progressBar.seek .mainbar {
     background: #0078E7;
   }
-  .controle-panel .progressBar.seek .bufferbar {
+  .control-panel .progressBar.seek .bufferbar {
     background: hsla(0, 100%, 100%, 0.33);
   }
   .volume-slider {
@@ -1229,7 +1229,7 @@
   button.btn.volume {
     position:relative;
   }
-  .controle-panel .playtime {
+  .control-panel .playtime {
     line-height: 30px;
     margin: 0 6px;
   }
@@ -1304,22 +1304,22 @@
     height: 100% !important;
   }
   
-  #kusa5:-moz-full-screen .controle-panel {
+  #kusa5:-moz-full-screen .control-panel {
     height: 5px !important;
     opacity: 0.666 !important;
     transition: all 0.3s ease-out !important;
   }
-  #kusa5:-webkit-full-screen .controle-panel {
+  #kusa5:-webkit-full-screen .control-panel {
     height: 5px !important;
     opacity: 0.666 !important;
     transition: all 0.3s ease-out !important;
   }
-  #kusa5:-moz-full-screen .controle-panel.controle-panel-show {
+  #kusa5:-moz-full-screen .control-panel.control-panel-show {
     height: 46px !important; /* 表示 */
     opacity: 1 !important;
     transition: all 0.3s ease-out !important;
   }
-  #kusa5:-webkit-full-screen .controle-panel.controle-panel-show {
+  #kusa5:-webkit-full-screen .control-panel.control-panel-show {
     height: 46px !important; /* 表示 */
     opacity: 1 !important;
     transition: all 0.3s ease-out !important;
