@@ -283,7 +283,7 @@
   const $video = $(`<video type="video/mp4"'
         codecs="avc1.42E01E, mp4a.40.2"
         autoplay muted preload="auto" />`)
-    .on('pause', ev => Config.setValue(nicoRate, ev.target.playbackRate))
+    .on('pause', ev => Config.setValue(Config.nicoRate, ev.target.playbackRate))
     .on('play',  ev => {
       // レート情報の記憶
       var nicoRate = Config.loadValue(Config.nicoRate);
