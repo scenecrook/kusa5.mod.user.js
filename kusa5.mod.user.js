@@ -51,6 +51,8 @@
     static useUserPlayerSize() { return 'Kusa5_useUserPlayerSize'; }
     static useUserPlayerWidth() { return 'Kusa5_useUserPlayerWidth'; }
     static useUserPlayerHeight() { return 'Kusa5_useUserPlayerHeight'; }
+    static wheelVolume() { return 'Kusa5_wheelVolume'; }
+    static wheelVolumeStep() { return 'Kusa5_wheelVolumeStep'; }
     
     static loadValue(item) {
       if(typeof item === 'function') {
@@ -105,7 +107,8 @@
       if(!Config.isValueExist(Config.useUserPlayerHeight)) { Config.setValue(Config.useUserPlayerHeight, 480); }
       if(!Config.isValueExist(Config.useUserPlayerSize)) { Config.setValue(Config.useUserPlayerSize, false); }
       if(!Config.isValueExist(Config.useUserPlayerWidth)) { Config.setValue(Config.useUserPlayerWidth, 854); }
-
+      if(!Config.isValueExist(Config.wheelVolume)) { Config.setValue(Config.wheelVolume, false); }
+      if(!Config.isValueExist(Config.wheelVolumeStep)) { Config.setValue(Config.wheelVolumeStep, 5); }
     }
   }
   Config.initialize();
@@ -864,6 +867,10 @@
         <input type="checkbox" name="${Config.showPageTop()}"> <span>ページ上部に表示</span>　Flashプレーヤーには影響なし
       </div>
       <div class="mb1rem">
+        <input type="checkbox" name="${Config.wheelVolume()}"> <span>マウスホイールで音量を調節する</span>
+        <div>ホイール回転あたりの調節量: <input type="number" name="${Config.wheelVolumeStep()}" min="0" max="100"></div>
+      </div>
+      <div class="mb1rem">
         <p>シークバーとか再生位置の更新フレームレート</p>
         <input type="number" name="${Config.playerFPS()}" min="1" max="120"> fps
       </div>
@@ -1094,7 +1101,31 @@
         e.preventDefault();
       }
     });
-      
+    
+    // ホイールイベント
+    kusa5.on('wheel', (e) => {
+      if(!Config.loadValue(Config.wheelVolume)) {
+        return;
+      }
+      e.preventDefault();
+      var volume = $video.get(0).volume;
+      var step = Config.loadValue(Config.wheelVolumeStep);
+      if(e.originalEvent.deltaY < 0) {
+        volume += step * 0.01;
+        if(volume > 1.0) {
+          volume = 1;
+        }
+      } else {
+        volume -= step * 0.01;
+        if(volume < 0) {
+          volume = 0;
+        }
+      }
+      $video.get(0).volume = volume;
+      Config.setValue(Config.nicoVolume, parseInt(volume * 100));
+      updateSlider();
+    });
+    
     //メッセージ取得、文字流しとかのループイベント登録
     promise.then(loadMsg);
   });
