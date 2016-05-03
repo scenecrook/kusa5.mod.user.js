@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     42
+// @version     43
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -717,7 +717,7 @@
   };
 
   function generateNGarray() {
-    var regex = /\/(.*)\/(.*)\,/;
+    var regex = /\/(.*)\/([^,]*)\,?/;
     var ng = Config.loadValue(Config.ngKeyword);
     _.each(ng.split('\n'), v => {
       var m = v.match(regex);
