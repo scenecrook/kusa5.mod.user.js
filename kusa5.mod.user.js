@@ -35,6 +35,7 @@
     static fastInit() { return 'Kusa5_fastInit'; }
     static hidePlayList() { return 'Kusa5_hidePlaylist'; }
     static lastVersion() { return 'Kusa5_lastVersion'; }
+    static monitorSizeFullScreen() { return 'Kusa5_monitorSizeFullScreen'; }
     static muted() { return 'Kusa5_muted'; }
     static ngKeyword() { return 'Kusa5_ngKeyword'; }
     static nicoRate() { return 'Kusa5_nicoRate'; }
@@ -87,6 +88,7 @@
       if(!Config.isValueExist(Config.fastInit)) { Config.setValue(Config.fastInit, true); }
       if(!Config.isValueExist(Config.hidePlayList)) { Config.setValue(Config.hidePlaylist, false); }
       if(!Config.isValueExist(Config.lastVersion)) { Config.setValue(Config.lastVersion, GM_info.script.version); }
+      if(!Config.isValueExist(Config.monitorSizeFullScreen)) { Config.setValue(Config.monitorSizeFullScreen, true); }
       if(!Config.isValueExist(Config.muted)) { Config.setValue(Config.muted, false); }
       if(!Config.isValueExist(Config.ngKeyword, true)) { Config.setValue(Config.ngKeyword, DEFAULT_NG(), true); }
       if(!Config.isValueExist(Config.nicoRate)) { Config.setValue(Config.nicoRate, 1); }
@@ -141,6 +143,7 @@
     }
   }
   
+  var siteHeaderHeight = 0;
   class FullScreen {
     static isOpen() {
       document.mozFullScreen || document.webkitIsFullScreen ||
@@ -160,6 +163,14 @@
     }
     
     static toggle() {
+      if((apidata.viewerInfo.isPremium || Config.loadValue(Config.noLimit)) && Config.loadValue(Config.monitorSizeFullScreen)) {
+        FullScreen.monitorSize();
+      } else {
+        FullScreen.browserSize();
+      }
+    }
+    
+    static monitorSize() {
       // なんかisOpen()だけ動かなくなった
       // if(FullScreen.isOpen()) {
       if(document.mozFullScreen || document.webkitIsFullScreen ||
@@ -192,6 +203,26 @@
             }, 5000);
           }
         });
+      }
+    }
+    
+    static browserSize() {
+      if($('#siteHeader').is(':visible')) {
+          $('#siteHeader').hide();
+          $('.btn_feedback').hide();
+          $('.videoHeaderOuter').hide();
+          $('#playlist').hide();
+          $('#kusa5').addClass('browser-full-screen').css('top', -$('#siteHeader').height());
+          $('body').addClass('browser-full-screen');
+      } else {
+          $('#siteHeader').show();
+          $('.btn_feedback').show();
+          $('.videoHeaderOuter').show();
+          if(Config.loadValue(Config.hidePlayList) === true) {
+            $('#playlist').hide();
+          }
+          $('#kusa5').removeClass('browser-full-screen').css('top', '');
+          $('body').removeClass('browser-full-screen');
       }
     }
   }
@@ -860,6 +891,7 @@
     <div class="kusa5box">
       <p>プレミアム会員専用</p>
       <div><input type="checkbox" name="${Config.autoPlay()}"> <span>動画を自動再生する</span></div>
+      <div><input type="checkbox" name="${Config.monitorSizeFullScreen()}"> <span>モニターサイズでフルスクリーンにする</span></div>
     </div>
     <div class="kusa5box">
       <p>NGキーワード</p>
@@ -1370,6 +1402,18 @@
     height: 46px !important; /* 表示 */
     opacity: 1 !important;
     transition: all 0.3s ease-out !important;
+  }
+  
+  /* モニターサイズ */
+  body.browser-full-screen {
+    overflow: hidden !important;
+  }
+  
+  #kusa5.browser-full-screen {
+    height: 100vh !important;
+    width: 100vw !important;
+    position: absolute;
+    left: 0px;
   }
   
   /*
