@@ -936,7 +936,7 @@
         }
       });
       $('#kusa5_config').find('textarea').each((i, e) => {
-        Config.setValue($(e).attr('name'), JSON.stringify($(e).prop('value')));
+        Config.setValue($(e).attr('name'), $(e).prop('value'), true);
       });
       $('#kusa5_config').hide();
       $('body').css('overflow', 'auto');
