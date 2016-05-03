@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     41
+// @version     42
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -123,7 +123,7 @@
     }
     
     getLine(index) {
-      if (index === undefined) {
+      if(index === undefined) {
         return this.allocatedLine;
       } else {
         return this.allocatedLine[index];
@@ -236,9 +236,9 @@
       var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
       var seconds = sec_num - (hours * 3600) - (minutes * 60);
 
-      if (hours   < 10) {hours   = "0"+hours;}
-      if (minutes < 10) {minutes = "0"+minutes;}
-      if (seconds < 10) {seconds = "0"+seconds;}
+      if(hours   < 10) { hours   = "0"+hours; }
+      if(minutes < 10) { minutes = "0"+minutes; }
+      if(seconds < 10) { seconds = "0"+seconds; }
       return (hours > 0? hours+':' :'') + minutes+':'+seconds;
     }
     
@@ -280,7 +280,7 @@
   Debug
   ******************************************************************************/
   function updateAllocatedLine() {
-    if (Config.loadValue(Config.debug)) {
+    if(Config.loadValue(Config.debug)) {
       var normalizeNum = (n => {
         return Util.paddingRight(n, ' ', 2);
       });
@@ -342,7 +342,7 @@
     var result = '';
     for (var i = lines; i > 0; i--) {
       result += '#kusa5 .msg.l'+ i +' { top: calc((' + height + 'px / '+ lines +') * '+ (i - 1) +')';
-      if(force === true){
+      if(force === true) {
         result += ' !important; }\n';
       } else {
         result += '; }\n';
@@ -385,12 +385,12 @@
       });
       
       var data = '';
-      if(threadkey !== '' && force184 !== ''){
+      if(threadkey !== '' && force184 !== '') {
         data = `<packet><thread thread="${info.thread_id}"
           version="20061206" res_from="-1000" scores="1" user_id="${info.user_id}"
           threadkey="${threadkey}" force_184="${force184}" />
           </packet>`;
-      } else if(force184 !== ''){
+      } else if(force184 !== '') {
         data = `<packet><thread thread="${info.thread_id}"
           version="20061206" res_from="-1000" scores="1" user_id="${info.user_id}"
           force_184="${force184}" />
@@ -435,7 +435,7 @@
           $('.control-panel .duration')
             .text(Util.sec2HHMMSS(v.duration));
           
-          if (v.buffered.length !== 0) {
+          if(v.buffered.length !== 0) {
             var bufTime = v.buffered.end(v.buffered.length - 1);
             var bw = 100 * bufTime / v.duration;
             $('.progressBar.seek .bufferbar').css('width', bw + '%');
@@ -549,16 +549,16 @@
       $m.text(ch.c);
       $m.html($m.text().replace(/\n/, '<br>'));
       _.each(ch.m.split(' '), command => {
-        if (command in colorTable) {
+        if(command in colorTable) {
           $m.css('color', colorTable[command]);
-        } else if (command[0] === '#') {
+        } else if(command[0] === '#') {
           $m.css('color', command);
         }
-        if (command in sizeTable) {
+        if(command in sizeTable) {
           msgSize = msgsizeTable[command];
           $m.addClass(command);
         }
-        if (command in posTable) {
+        if(command in posTable) {
           msgPos = posTable[command];
           $m.addClass(command);
         }
@@ -568,7 +568,7 @@
       });
       $video.after($m);
       
-      if (msgPos === posTable.naka) {
+      if(msgPos === posTable.naka) {
         // 流すコメントは右画面外にセット
         $m.css('right', `-${$m.width() + 10}px`);
       }
@@ -591,7 +591,7 @@
               var index = 0;
               var value = Math.max.apply(null, ueLine.getLine());
               for (var i = 0; i <= ueLine.count() - msgSize * msgReturns; i++) {
-                if (ueLine.getLine(i) < value) {
+                if(ueLine.getLine(i) < value) {
                   value = ueLine.getLine(i);
                   index = i;
                 }
@@ -601,14 +601,14 @@
           case posTable.naka:
             return (() => {
               for (var i = 1; i <= allLine.count() - msgSize * msgReturns; i++) {
-                if (hasRightSpace('.l' + i)) {
+                if(hasRightSpace('.l' + i)) {
                   return i;
                 }
               }
               var index = 0;
               var value = Math.max.apply(null, allLine.getLine());
               for (var i = 0; i <= allLine.count() - msgSize * msgReturns; i++) {
-                if (allLine.getLine(i) < value) {
+                if(allLine.getLine(i) < value) {
                   value = allLine.getLine(i);
                   index = i;
                 }
@@ -619,14 +619,14 @@
             return (() => {
               var index = 0;
               var value = Math.max.apply(null, shitaLine.getLine());
-              if (value === 0) {
+              if(value === 0) {
                 return shitaLine.count() - msgSize * msgReturns + 1;
               }
               for (var i = 0; i <= shitaLine.count() - msgSize * msgReturns; i++) {
-                if (shitaLine.getLine(i) <= value) {
+                if(shitaLine.getLine(i) <= value) {
                   var check = (() => {
                     for (var j = i; j < i + msgSize * msgReturns; j++) {
-                      if (shitaLine.getLine(j) > shitaLine.getLine(i)) {
+                      if(shitaLine.getLine(j) > shitaLine.getLine(i)) {
                         i = j;
                         return false;
                       }
@@ -634,7 +634,7 @@
                     return true;
                   });
                   
-                  if (check()) {
+                  if(check()) {
                     value = shitaLine.getLine(i);
                     index = i;
                   }
@@ -648,10 +648,10 @@
       // alloc
       for (var i = line; i < line + msgSize * msgReturns; i++) {
         allLine.alloc(i - 1);
-        if (msgPos === posTable.ue) {
+        if(msgPos === posTable.ue) {
           ueLine.alloc(i - 1);
         }
-        if (msgPos === posTable.shita) {
+        if(msgPos === posTable.shita) {
           shitaLine.alloc(i - 1);
         }
         $m.addClass('l' + i);
@@ -661,17 +661,17 @@
       var free = (() => {
         for (var i = line; i < line + msgSize * msgReturns; i++) {
           allLine.free(i - 1);
-          if (msgPos === posTable.ue) {
+          if(msgPos === posTable.ue) {
             ueLine.free(i - 1);
           }
-          if (msgPos === posTable.shita) {
+          if(msgPos === posTable.shita) {
             shitaLine.free(i - 1);
           }
         }
       });
       
       $m.css('opacity', Config.loadValue(Config.commentTransparency));
-      if (msgPos === posTable.naka) {
+      if(msgPos === posTable.naka) {
         //オーバーシュート
         $m.css('transform', `translate3d(-${baseW + $m.width()*2 + 10}px, 0, 0)`);
       } else {
@@ -721,7 +721,7 @@
       if(m != null) {
         var a = m[1].replace('\/', '/').replace('//', '/');
         var b = m[2];
-        if (b != '') {
+        if(b != '') {
           ngArray.push(new RegExp(a, b));
         } else {
           ngArray.push(new RegExp(a));
@@ -731,10 +731,13 @@
   }
 
   function ngfilter(ch) {
-    if (Config.loadValue(Config.suppress0secComment) && ch.t < 100) // 1秒以内。いわゆる0秒コメ
+    if(Config.loadValue(Config.suppress0secComment) && ch.t < 100) { // 1秒以内。いわゆる0秒コメ
       return false;
+    }
     // NGワード
-    if (Config.loadValue(Config.ngKeyword) === '') { return true; }
+    if(Config.loadValue(Config.ngKeyword) === '') {
+      return true; 
+    }
     var ng = Config.loadValue(Config.ngKeyword);
     return _.reduce(ngArray, (cary, re) => cary && !ch.c.match(re), true);
   }
@@ -805,7 +808,7 @@
     var seekBar = $('.progressBar.seek');
     var buffBar = $('.progressBar.seek .bufferbar');
     var offset = e.pageX - seekBar.offset().left; //Click pos
-    if (!(apidata.viewerInfo.isPremium || Config.loadValue(Config.noLimit)) && (offset > buffBar.width())) {
+    if(!(apidata.viewerInfo.isPremium || Config.loadValue(Config.noLimit)) && (offset > buffBar.width())) {
       offset = buffBar.width();
     }
     var ratio = Math.min(1, Math.max(0, offset / seekBar.width()));
@@ -820,16 +823,18 @@
   function updateRepeat(oninit) {
     if(oninit) {
       var state = Config.loadValue(Config.repeat);
-      if(state !== null)
+      if(state !== null) {
         $video.get(0).loop = state;
+      }
     } else {
       $video.get(0).loop = !$video.get(0).loop;
       Config.setValue(Config.repeat, $video.get(0).loop);
     }
-    if($video.get(0).loop)
+    if($video.get(0).loop) {
       $('button.repeat').html('<i class="fa fa-repeat"></i>');
-    else
+    } else {
       $('button.repeat').html('<i class="fa fa-arrow-right"></i>');
+    }
   }
 
   /*
@@ -923,10 +928,10 @@
     });
     $overlay.find('#kusa5_config_close').on('click', () => {
       $('#kusa5_config').find('input').each((i, e) => {
-        if ($(e).attr('type') === 'checkbox') {
+        if($(e).attr('type') === 'checkbox') {
           Config.setValue($(e).attr('name'), $(e).prop('checked'));
         }
-        if ($(e).attr('type') === 'number') {
+        if($(e).attr('type') === 'number') {
           Config.setValue($(e).attr('name'), $(e).prop('value'));
         }
       });
@@ -944,7 +949,7 @@
   Initialize
   ******************************************************************************/
   var initKusa5 = (() => {
-    if (apidata.flashvars.movie_type !== 'mp4') {
+    if(apidata.flashvars.movie_type !== 'mp4') {
       $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応）</p>')
       return;
     }
@@ -953,12 +958,14 @@
     
     $('.notify_update_flash_player').hide();
     $('.playerContainer').hide();
-    if (Config.loadValue(Config.hidePlaylist))
+    if(Config.loadValue(Config.hidePlaylist)) {
       $('#playlist').hide();
+    }
     $('#playerContainerSlideArea').attr('id', 'kusa5');
-    if (Config.loadValue(Config.showPageTop))
-      $('#playerContainerWrapper').insertBefore('.videoHeaderOuter'); // お好み
-    if ((apidata.viewerInfo.isPremium || Config.loadValue(Config.noLimit)) && !Config.loadValue(Config.autoPlay)) {
+    if(Config.loadValue(Config.showPageTop)) {
+      $('#playerContainerWrapper').insertBefore('.videoHeaderOuter');
+    }
+    if((apidata.viewerInfo.isPremium || Config.loadValue(Config.noLimit)) && !Config.loadValue(Config.autoPlay)) {
       $video.removeAttr('autoplay');
       $video.attr({ poster: apidata.videoDetail.thumbnail });
       var $playButton = $('<div id="kusa5_playbutton"><div><i class="fa fa-play"></i></div></div>');
@@ -980,10 +987,10 @@
     }
 
     $('#kusa5_config').find('input').each((i, e) => {
-      if ($(e).attr('type') === 'checkbox') {
+      if($(e).attr('type') === 'checkbox') {
         $(e).prop('checked', Config.loadValue($(e).attr('name')));
       }
-      if ($(e).attr('type') === 'number') {
+      if($(e).attr('type') === 'number') {
         $(e).prop('value', Config.loadValue($(e).attr('name')));
       }
     });
@@ -991,7 +998,7 @@
       $(e).prop('value', Config.loadValue($(e).attr('name')));
     });
 
-    if (Config.loadValue(Config.debug)) {
+    if(Config.loadValue(Config.debug)) {
       $('#kusa5').append('<div id="kusa5_debug" style="font-family: monospace;" />');
       $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
       $('#kusa5_debug').append('<p style="position:absolute;top:0;right:4px;color:#64FF64;">&#x23ec;</p>');
@@ -1006,7 +1013,7 @@
     var bar = $('#volume-bar')[0];
     var muted = Config.loadValue(Config.muted);
     $video.get(0).muted = muted;
-    if (muted === true) {
+    if(muted === true) {
       $('#kusa5 button.mute').html('<i class="fa fa-volume-off"></i>');
       slider.value = 0;
       bar.style.width = 0 + 'px';
@@ -1021,7 +1028,7 @@
     $('input[value="' + Config.loadValue(Config.nicoRate) + '"]').click();
 
     $('#kusa5 button.mute').on('click', ev => {
-      if ($video.get(0).muted) {
+      if($video.get(0).muted) {
         $video.get(0).muted = false;
         $('#kusa5 button.mute').html('<i class="fa fa-volume-up"></i>');
         var volume = Config.loadValue(Config.nicoVolume);
@@ -1062,8 +1069,9 @@
       updateBar(e);
     });
     $('.progressBar').mouseup(function (e) {
-      if (!timeDrag)
+      if(!timeDrag) {
         return;
+      }
       timeDrag = false;
       updateBar(e.pageX);
     }).mousemove(e=> {
@@ -1074,15 +1082,17 @@
     var keyTbl = [];
     keyTbl[32] = $video.videoToggle; //スペースキー
     kusa5.keyup(e => {
-      if (!keyTbl[e.keyCode])
+      if(!keyTbl[e.keyCode]) {
         return;
+      }
       keyTbl[e.keyCode]();
       e.preventDefault();
     });
     kusa5.keydown(e => {
       //ボタンの処理が登録されてたらブラウザの動作をうちけす
-      if (keyTbl[e.keyCode])
+      if(keyTbl[e.keyCode]){
         e.preventDefault();
+      }
     });
       
     //メッセージ取得、文字流しとかのループイベント登録
@@ -1094,11 +1104,11 @@
   ******************************************************************************/
   $('body').append($('<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">'))
            .append(configOverlay());
-  if (Config.loadValue(Config.fastInit) !== false) {
+  if(Config.loadValue(Config.fastInit) !== false) {
     var timer = setInterval(() => {
       // jQueryとUnderscore.jsが読み込み終わってる必要がある
       // Nico.CommonNotificationHeaderにアクセスできる状態ならプレミアム会員かどうかのチェックも終わっている？
-      if ($.isReady === true && _.VERSION !== '') {
+      if($.isReady === true && _.VERSION !== '') {
         clearInterval(timer);
         setTimeout(initKusa5, 0);
       }
@@ -1116,7 +1126,7 @@
     $('head').append(styleSeet);
   }
   
-    addGlobalStyle(`
+  addGlobalStyle(`
   * {
     min-width: auto !important;
   }
