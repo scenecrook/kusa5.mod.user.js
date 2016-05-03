@@ -813,7 +813,7 @@
   const CONFIG_OVERLAY = `
   <div id="kusa5_config">
     <button id="kusa5_config_close">✕</button>
-    <p class="kusa5h1">Kusa5.mod config <span style="font-size:0.66em;">version.${GM_info.script.version}</span></p>
+    <p class="kusa5h1">Kusa5.mod <span style="font-size:0.66em;">v.${GM_info.script.version}</span> config</p>
     <p>一部の設定はページリロードで反映されます</p>
     <div class="kusa5box">
       <p>全般</p>
