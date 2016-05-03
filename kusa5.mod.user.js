@@ -212,7 +212,7 @@
           $('.btn_feedback').hide();
           $('.videoHeaderOuter').hide();
           $('#playlist').hide();
-          $('#kusa5').addClass('browser-full-screen').css('top', -$('#siteHeader').height());
+          $('#kusa5').addClass('browser-full-screen');
           $('body').addClass('browser-full-screen');
       } else {
           $('#siteHeader').show();
@@ -221,7 +221,7 @@
           if(Config.loadValue(Config.hidePlayList) === true) {
             $('#playlist').hide();
           }
-          $('#kusa5').removeClass('browser-full-screen').css('top', '');
+          $('#kusa5').removeClass('browser-full-screen');
           $('body').removeClass('browser-full-screen');
       }
     }
@@ -1412,8 +1412,9 @@
   #kusa5.browser-full-screen {
     height: 100vh !important;
     width: 100vw !important;
-    position: absolute;
+    position: fixed;
     left: 0px;
+    top: 0px;
   }
   
   /*
