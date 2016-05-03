@@ -36,6 +36,7 @@
     static hidePlayList() { return 'Kusa5_hidePlaylist'; }
     static lastVersion() { return 'Kusa5_lastVersion'; }
     static monitorSizeFullScreen() { return 'Kusa5_monitorSizeFullScreen'; }
+    static marqueeDuration() { return 'Kusa5_marqueeDuration'; }
     static muted() { return 'Kusa5_muted'; }
     static ngKeyword() { return 'Kusa5_ngKeyword'; }
     static nicoRate() { return 'Kusa5_nicoRate'; }
@@ -88,6 +89,7 @@
       if(!Config.isValueExist(Config.fastInit)) { Config.setValue(Config.fastInit, true); }
       if(!Config.isValueExist(Config.hidePlayList)) { Config.setValue(Config.hidePlaylist, false); }
       if(!Config.isValueExist(Config.lastVersion)) { Config.setValue(Config.lastVersion, GM_info.script.version); }
+      if(!Config.isValueExist(Config.marqueeDuration)) { Config.setValue(Config.marqueeDuration, 7); }
       if(!Config.isValueExist(Config.monitorSizeFullScreen)) { Config.setValue(Config.monitorSizeFullScreen, true); }
       if(!Config.isValueExist(Config.muted)) { Config.setValue(Config.muted, false); }
       if(!Config.isValueExist(Config.ngKeyword, true)) { Config.setValue(Config.ngKeyword, DEFAULT_NG(), true); }
@@ -884,6 +886,10 @@
         <div>opacity: <input type="number" name="${Config.commentTransparency()}" min="0" max="1" step="0.05"></div>
       </div>
       <div class="mb1rem">
+        <p>コメントの速さ</p>
+        <div>左端が出てから右端が消えるまで: <input type="number" name="${Config.marqueeDuration()}" min="0"> s</div>
+      </div>
+      <div>
         <p>コメントイベントの最短発火間隔</p>
         <input type="number" name="${Config.throttleComment()}" min="0"> ms
       </div>
@@ -1349,7 +1355,7 @@
     color: white;
     padding: 0 .5em;
     position: absolute;
-    transition-duration: 7s;
+    transition-duration: ${Config.loadValue(Config.marqueeDuration)}s;
     transition-timing-function: linear;
     transition-property: transform;
     text-align: center;
