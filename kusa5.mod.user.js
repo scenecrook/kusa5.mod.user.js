@@ -1473,7 +1473,7 @@
   }
 
   /* 非表示状態 */
-  #kusa5.comment-hidden .msg { opacity: 0;}
+  #kusa5.comment-hidden .msg { opacity: 0 !important;}
   button.comment-hidden {
     opacity: 1;
   }
