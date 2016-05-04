@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     43
+// @version     44
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -467,6 +467,68 @@
             $video.removeAttr('style');
           }
         }, updateInterval));
+      });
+    });
+  }
+
+  function loadOwnerMsg(info) {
+    return $.ajax({
+      type: 'GET',
+      url: THREAD + info.thread_id,
+      dataType: 'text',
+      crossDomain: true,
+      cache: false,
+      xhrFields: {'withCredentials': true},
+    }).then(threadinfo => {
+      var threadkey = '';
+      var force184 = '';
+      _.each(threadinfo.split('&'), info => {
+        if(info.includes('threadkey')) {
+          threadkey = info.split('=')[1];
+        } else if(info.includes('force_184')) {
+          force184 = info.split('=')[1];
+        }
+      });
+      
+      // fork="1"つけるだけでほとんど処理が同じだから関数を共通化するなりclass化してしまいたい
+      var data = '';
+      if(threadkey !== '' && force184 !== '') {
+        data = `<packet><thread thread="${info.thread_id}"
+          version="20061206" res_from="-1000" scores="1" user_id="${info.user_id}"
+          threadkey="${threadkey}" force_184="${force184}" fork="1" />
+          </packet>`;
+      } else if(force184 !== '') {
+        data = `<packet><thread thread="${info.thread_id}"
+          version="20061206" res_from="-1000" scores="1" user_id="${info.user_id}"
+          force_184="${force184}" fork="1" />
+          </packet>`;
+      } else {
+        data = `<packet><thread thread="${info.thread_id}"
+          version="20061206" res_from="-1000" scores="1" fork="1" />
+          </packet>`;
+      }
+      
+      $.ajax({
+        type: 'POST',
+        url: info.ms,
+        // サーバーによってCORSで弾かれたりバッドリクエスト判定されたり
+        // するので application/xmlでもなくtext/xmlでもなく
+        // この値に落ち着いた
+        contentType: "text/plain",
+        dataType: 'xml',
+        data: data,
+        crossDomain: true,
+        cache: false,
+      }).then(xml2chats,
+        data => console.log('メッセージロード失敗', data)
+      ).done(chats => {
+        //TODO: xml2chatsみたいな感じで＠から始まるコメントとそうでないコメントにわける
+        //      ＠から始まるものはニコスクリプトなので適当に処理する
+        //      たとえば ＠ジャンプ (http://info.nicovideo.jp/help/player/script/30.html) なら
+        //      /＠([^\s]*)\s([^\s]*)\s?([^\s]*)?\s?([^\s]*)?\s?([^\s]*)?\s?([^\s]*)?/
+        //      みたいなRegexを用意するとうまくパースできるはず
+        //
+        //      と言うか空白区切りでsplit()でもいいな？
       });
     });
   }
