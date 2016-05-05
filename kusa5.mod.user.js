@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     44
+// @version     45
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -340,19 +340,6 @@
     }
   };
   $video.click($video.videoToggle);
-
-  function generateLines(height, lines, force) {
-    var result = '';
-    for (var i = lines; i > 0; i--) {
-      result += '#kusa5 .msg.l'+ i +' { top: calc((' + height + 'px / '+ lines +') * '+ (i - 1) +')';
-      if(force === true) {
-        result += ' !important; }\n';
-      } else {
-        result += '; }\n';
-      }
-    }
-    return result;
-  }
 
   /*
   Niconico API
@@ -1213,6 +1200,19 @@
   /*
   CSS
   ******************************************************************************/
+  function generateLines(height, lines, force) {
+    var result = '';
+    for (var i = lines; i > 0; i--) {
+      result += '#kusa5 .msg.l'+ i +' { top: calc((' + height + 'px / '+ lines +') * '+ (i - 1) +')';
+      if(force === true) {
+        result += ' !important; }\n';
+      } else {
+        result += '; }\n';
+      }
+    }
+    return result;
+  }
+  
   function addGlobalStyle(css) {
     var styleSeet = $('<style type="text/css">');
     styleSeet.text(css);
