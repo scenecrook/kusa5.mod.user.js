@@ -168,7 +168,7 @@
     }
     
     static toggle() {
-      if((apidata.viewerInfo.isPremium || Config.loadValue(Config.noLimit)) && Config.loadValue(Config.monitorSizeFullScreen)) {
+      if(Config.loadValue(Config.monitorSizeFullScreen)) {
         FullScreen.monitorSize();
       } else {
         FullScreen.browserSize();
