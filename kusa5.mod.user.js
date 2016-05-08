@@ -816,9 +816,9 @@
     <button class="btn mute r"><i class="fa fa-volume-up"></i></button>
     <button class="btn repeat r"><i class="fa fa-arrow-right"></i></button>
     <div class="playtime r">
-      <span class="current"></span>
+      <span class="current">88:88</span>
       /
-      <span class="duration"></span>
+      <span class="duration">88:88</span>
     </div>
   </div>`;
 
@@ -1332,6 +1332,11 @@
   .control-panel > .btn {
     width: 24px;
     float: left;
+    transition: color 0.1s ease-out;
+  }
+  .control-panel > .btn:hover {
+    color: #0078E7;
+    transition: color 0.1s ease-out;
   }
   .control-panel .r {float: right;}
 
@@ -1440,9 +1445,30 @@
   input.btn+label span{
     font-size:0.5em;
   }
+  
   div.ratepanel {
-    display: inline-block;
+    display: inline-flex;
     text-align: center;
+  }
+  div.ratepanel > label {
+    opacity: 0;
+    max-width: 0em;
+    overflow: hidden;
+    transition: all 0.3s ease-out, color 0.1s ease-out;
+  }
+  div.ratepanel > input:checked + label {
+    opacity: 1;
+    max-width: 5em;
+  }
+  div.ratepanel:hover > label {
+    opacity: 1;
+    padding: 1px;
+    max-width: 5em;
+    transition: all 0.3s ease-out, color 0.1s ease-out;
+  }
+  div.ratepanel:hover > label:hover {
+    color: #0078E7;
+    transition: all 0.3s ease-out, color 0.1s ease-out;
   }
 
 
