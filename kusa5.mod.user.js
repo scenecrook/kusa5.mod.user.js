@@ -805,7 +805,10 @@
     </div>
     <button class="btn rewind"><i class="fa fa-fast-backward"></i></button>
     <button class="btn toggle play"><i class="fa fa-play"></i></button>
-    ${rateForm()}
+    <div class="combined-panel">
+      ${rateForm()}
+      ${commentForm()}
+    </div>
     <button class="btn full r"><i class="fa fa-arrows-alt"></i></button>
     <button class="btn config r"><i class="fa fa-cog"></i></button>
     <button class="btn comment-hidden r"><i class="fa fa-comment"></i></button>
@@ -891,11 +894,13 @@
 
   /*
   Comment panel (not implemented)
-  ******************************************************************************/
-  const COMMENT = `
-  <div class="comment">
-    <input type="text" class="l" /><button class="btn l">投稿</button>
-  </div>`;
+  ******************************************************************************/  
+  function commentForm() {
+    return `
+      <div class="comment">
+        <input id="comment-form" type="text" value="コメ欄表示プレビュー" readonly="readonly"></input><button id="comment-submit-btn" class="btn">投稿</button>
+      </div>`;
+  }
 
   /*
   Config panel
@@ -1334,7 +1339,7 @@
     float: left;
     transition: color 0.1s ease-out;
   }
-  .control-panel > .btn:hover {
+  .control-panel .btn:hover {
     color: #0078E7;
     transition: color 0.1s ease-out;
   }
@@ -1446,7 +1451,13 @@
     font-size:0.5em;
   }
   
+  .combined-panel {
+    position: relative;
+    display: inline-block;
+  }
+  
   div.ratepanel {
+    position: absolute;
     display: inline-flex;
     text-align: center;
   }
@@ -1471,6 +1482,13 @@
     transition: all 0.3s ease-out, color 0.1s ease-out;
   }
 
+  .control-panel div.comment {
+    margin-left: 3em;
+    display: inline-block;
+  }
+  div.comment > #comment-form {
+    width: 30em;
+  }
 
   /*
   コメント要素関連
