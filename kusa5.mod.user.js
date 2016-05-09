@@ -1454,6 +1454,7 @@
   .combined-panel {
     position: relative;
     display: inline-block;
+    width: calc(100% - 450px);
   }
   
   div.ratepanel {
@@ -1462,6 +1463,7 @@
     text-align: center;
   }
   div.ratepanel > label {
+    padding-right: 1px;
     opacity: 0;
     max-width: 0em;
     overflow: hidden;
@@ -1469,12 +1471,15 @@
   }
   div.ratepanel > input:checked + label {
     opacity: 1;
-    max-width: 5em;
+    max-width: 3em;
+  }
+  div.ratepanel:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    transition: all 0.3s ease-out, color 0.1s ease-out;
   }
   div.ratepanel:hover > label {
     opacity: 1;
-    padding: 1px;
-    max-width: 5em;
+    max-width: 3em;
     transition: all 0.3s ease-out, color 0.1s ease-out;
   }
   div.ratepanel:hover > label:hover {
@@ -1483,11 +1488,12 @@
   }
 
   .control-panel div.comment {
+    width: 100%;
     margin-left: 3em;
     display: inline-block;
   }
   div.comment > #comment-form {
-    width: 30em;
+    width: calc(100% - 5em);
   }
 
   /*
