@@ -143,7 +143,7 @@
     }
     
     free(index) {
-      if(index < this.allocatedLine.length) {
+      if(index < this.allocatedLine.length && this.allocatedLine[index] !== 0) {
         this.allocatedLine[index]--;
         updateAllocatedLine();
       }
