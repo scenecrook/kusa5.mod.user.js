@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     45
+// @version     45(preview)
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
