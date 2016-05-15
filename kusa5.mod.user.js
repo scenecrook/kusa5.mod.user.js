@@ -82,7 +82,7 @@
     
     // 冷静に考えてこれ頭悪くないすか
     static initialize() {
-      if(!Config.isValueExist(Config.autoCommentSize)) { Config.setValue(Config.autoCommentSize, false); }
+      if(!Config.isValueExist(Config.autoCommentSize)) { Config.setValue(Config.autoCommentSize, true); }
       if(!Config.isValueExist(Config.autoPlay)) { Config.setValue(Config.autoPlay, false); }
       if(!Config.isValueExist(Config.baseFontSize)) { Config.setValue(Config.baseFontSize, 21); }
       if(!Config.isValueExist(Config.commentTransparency)) { Config.setValue(Config.commentTransparency, 0.8); }
@@ -1019,7 +1019,7 @@
         <div>
           <input type="checkbox" name="${Config.autoCommentSize()}"> <span>上下コメントの文字が大きい場合にプレイヤーからはみ出さないようにフォントサイズを自動で調整する</span>
           <div>
-            自動調整するための計算コストが大きいので動作が重くなる可能性があります<br>
+            自動調整するためにループ処理を行うので動作が重くなる可能性があります<br>
             現段階では調整によって縦のスペースが空いても詰められない制限があります
           </div>
         </div>
