@@ -25,6 +25,7 @@
   Class
   ******************************************************************************/
   class Config {
+    static autoCommentSize() { return 'Kusa5_autoCommentSize'; }
     static autoPlay() { return 'Kusa5_autoPlay'; }
     static baseFontSize() { return 'Kusa5_baseFontSize'; }
     static commentTransparency() { return 'Kusa5_commentTransparency'; }
@@ -81,6 +82,7 @@
     
     // 冷静に考えてこれ頭悪くないすか
     static initialize() {
+      if(!Config.isValueExist(Config.autoCommentSize)) { Config.setValue(Config.autoCommentSize, false); }
       if(!Config.isValueExist(Config.autoPlay)) { Config.setValue(Config.autoPlay, false); }
       if(!Config.isValueExist(Config.baseFontSize)) { Config.setValue(Config.baseFontSize, 21); }
       if(!Config.isValueExist(Config.commentTransparency)) { Config.setValue(Config.commentTransparency, 0.8); }
@@ -478,6 +480,7 @@
       });
       
       // fork="1"つけるだけでほとんど処理が同じだから関数を共通化するなりclass化してしまいたい
+      // もしくはloadMsgで同じpacketにまとめてしまうのもアリ
       var data = '';
       if(threadkey !== '' && force184 !== '') {
         data = `<packet><thread thread="${info.thread_id}"
@@ -728,6 +731,12 @@
         $m.css('transform', `translate3d(-${baseW + $m.width()*2 + 10}px, 0, 0)`);
       } else {
         // 静止
+        if(Config.loadValue(Config.autoCommentSize)) {
+          let playerWidth = $('#kusa5').width();
+          while($m.width() > playerWidth) {
+            $m.css('font-size', '-=1');
+          }
+        }
         $m.css('transform', `translate3d(0, 0, 0)`)
           .css('padding', 0)
           .css('margin-left', `-${$m.width() / 2}px`);
@@ -897,8 +906,12 @@
   ******************************************************************************/  
   function commentForm() {
     return `
-      <div class="comment">
-        <input id="comment-form" type="text" value="コメ欄表示プレビュー" readonly="readonly"></input><button id="comment-submit-btn" class="btn">投稿</button>
+      <div id="comment-form">
+        <div>
+          <input id="command" type="text" placeholder="color, command, etc." readonly="readonly"><!--
+      --><input id="comment" type="text" placeholder="新デザインプレビュー（コメント投稿はまだ未実装です）" readonly="readonly">
+        </div>
+        <button id="comment-submit-btn" class="btn">投稿</button>
       </div>`;
   }
 
@@ -908,74 +921,149 @@
   const CONFIG_OVERLAY = `
   <div id="kusa5_config">
     <button id="kusa5_config_close">✕</button>
-    <p class="kusa5h1">Kusa5.mod <span style="font-size:0.66em;">v.${GM_info.script.version}</span> config</p>
+    <p class="kusa5h1">kusa5.mod <span style="font-size:0.66em;">v.${GM_info.script.version}</span> config</p>
     <p>一部の設定はページリロードで反映されます</p>
-    <div class="kusa5box">
-      <p>全般</p>
-      <div><input type="checkbox" name="${Config.fastInit()}"> <span>Kusa5.modを高速に初期化する</span>（ページ読み込み直後のCPU使用率大）</div>
-      <div><input type="checkbox" name="${Config.hidePlayList()}"> <span>再生リストを非表示にする</span></div>
-    </div>
-    <div class="kusa5box">
-      <p>HTML5プレーヤー</p>
-      <div class="mb1rem">
-        <input type="checkbox" name="${Config.showPageTop()}"> <span>ページ上部に表示</span>　Flashプレーヤーには影響なし
+    
+    <hr>
+    
+    <form class="config-menu">
+      <div><input type="radio" id="kcm1" name="menu" checked><label for="kcm1" data-name="generic">全般</label></div>
+      <div><input type="radio" id="kcm2" name="menu"><label for="kcm2" data-name="html5-player">HTML5プレーヤー</label></div>
+      <div><input type="radio" id="kcm3" name="menu"><label for="kcm3" data-name="comment">コメント全般</label></div>
+      <div><input type="radio" id="kcm4" name="menu"><label for="kcm4" data-name="ng">NG</label></div>
+      <div><input type="radio" id="kcm5" name="menu"><label for="kcm5" data-name="premium-feature">プレミアム会員専用</label></div>
+      <div><input type="radio" id="kcm6" name="menu"><label for="kcm6" data-name="unknown">？？？？</label></div>
+      <div><input type="radio" id="kcm98" name="menu"><label for="kcm98" data-name="experimental-feature">実験的機能</label></div>
+      <div><input type="radio" id="kcm99" name="menu"><label for="kcm99" data-name="about">About</label></div>
+    </form>
+    
+    <div class="config-content">
+      <div class="kusa5box" data-name="generic">
+        <p>全般</p>
+        <div><input type="checkbox" name="${Config.fastInit()}"> <span>Kusa5.modを高速に初期化する</span>（ページ読み込み直後のCPU使用率大）</div>
+        <div><input type="checkbox" name="${Config.hidePlayList()}"> <span>再生リストを非表示にする</span></div>
       </div>
-      <div class="mb1rem">
-        <input type="checkbox" name="${Config.wheelVolume()}"> <span>マウスホイールで音量を調節する</span>
-        <div>ホイール回転あたりの調節量: <input type="number" name="${Config.wheelVolumeStep()}" min="0" max="100"></div>
+      
+      <div class="kusa5box" data-name="html5-player">
+        <p>HTML5プレーヤー</p>
+        <div class="mb1rem">
+          <input type="checkbox" name="${Config.showPageTop()}"> <span>ページ上部に表示</span>　Flashプレーヤーには影響なし
+        </div>
+        <div class="mb1rem">
+          <input type="checkbox" name="${Config.wheelVolume()}"> <span>マウスホイールで音量を調節する</span>
+          <div>ホイール回転あたりの調節量: <input type="number" name="${Config.wheelVolumeStep()}" min="0" max="100"></div>
+        </div>
+        <div class="mb1rem">
+          <p>シークバーとか再生位置の更新フレームレート</p>
+          <input type="number" name="${Config.playerFPS()}" min="1" max="120"> fps
+        </div>
+        <div class="mb1rem">
+          <input type="checkbox" name="${Config.useUserPlayerSize()}"> <span>プレーヤーサイズを固定する</span>
+          <div>幅 <input type="number" name="${Config.useUserPlayerWidth()}" min="0"> px</div>
+          <div>高さ <input type="number" name="${Config.useUserPlayerHeight()}" min="0"> px</div>
+        </div>
+        <div class="mb1rem">
+          <input type="checkbox" name="${Config.useEnhanceQuality()}"> <span>画質を調整する</span>（Firefoxでは重いので非推奨・100で無効）
+          <div>filter: brightness( <input type="number" name="${Config.enhanceBrightness()}" min="0"> %)</div>
+          <div>filter: contrast( <input type="number" name="${Config.enhanceContrast()}" min="0"> %)</div>
+          <div>filter: satuate( <input type="number" name="${Config.enhanceSatuate()}" min="0"> %)</div>
+        </div>
+        <div>
+          <input type="checkbox" name="${Config.monitorSizeFullScreen()}"> <span>モニターサイズでフルスクリーンにする</span>
+        </div>
       </div>
-      <div class="mb1rem">
-        <p>シークバーとか再生位置の更新フレームレート</p>
-        <input type="number" name="${Config.playerFPS()}" min="1" max="120"> fps
+      
+      <div class="kusa5box" data-name="comment">
+        <p>コメント</p>
+        <div class="mb1rem">
+          <p>コメントの相対フォントサイズ</p>
+          <p>値を大きくするとコメントが小さくなる</p>
+          ( プレーヤーの高さ ÷ <input type="number" name="${Config.baseFontSize()}" min="21"> ) px
+        </div>
+        <div class="mb1rem">
+          <p>コメントの透明度</p>
+          <div>opacity: <input type="number" name="${Config.commentTransparency()}" min="0" max="1" step="0.05"></div>
+        </div>
+        <div class="mb1rem">
+          <p>コメントの速さ</p>
+          <div>左端が出てから右端が消えるまで: <input type="number" name="${Config.marqueeDuration()}" min="0"> s</div>
+        </div>
+        <div>
+          <p>コメントイベントの最短発火間隔</p>
+          <input type="number" name="${Config.throttleComment()}" min="0"> ms
+        </div>
       </div>
-      <div class="mb1rem">
-        <input type="checkbox" name="${Config.useUserPlayerSize()}"> <span>プレーヤーサイズを固定する</span>
-        <div>幅 <input type="number" name="${Config.useUserPlayerWidth()}" min="0"> px</div>
-        <div>高さ <input type="number" name="${Config.useUserPlayerHeight()}" min="0"> px</div>
+      
+      <div class="kusa5box" data-name="ng">
+        <p>NGキーワード</p>
+        <p style="display:inline-block;">正規表現が使用できます（行区切り）</p>
+        <button id="Kusa5_regexReset"><i class="fa fa-repeat"></i> リセット</button>
+        <div><textarea id="Kusa5_regex" name="${Config.ngKeyword()}"></textarea></div>
+        <input type="checkbox" name="${Config.suppress0secComment()}"> <span>0秒コメントをNGにする</span>
       </div>
-      <div>
-        <input type="checkbox" name="${Config.useEnhanceQuality()}"> <span>画質を調整する</span>（Firefoxでは重いので非推奨・100で無効）
-        <div>filter: brightness( <input type="number" name="${Config.enhanceBrightness()}" min="0"> %)</div>
-        <div>filter: contrast( <input type="number" name="${Config.enhanceContrast()}" min="0"> %)</div>
-        <div>filter: satuate( <input type="number" name="${Config.enhanceSatuate()}" min="0"> %)</div>
+      
+      <div class="kusa5box" data-name="premium-feature">
+        <p>プレミアム会員専用</p>
+        <div><input type="checkbox" name="${Config.autoPlay()}"> <span>動画を自動再生する</span></div>
       </div>
-    </div>
-    <div class="kusa5box">
-      <p>コメント</p>
-      <div class="mb1rem">
-        <p>コメントの相対フォントサイズ</p>
-        <p>値を大きくするとコメントが小さくなる</p>
-        ( プレーヤーの高さ ÷ <input type="number" name="${Config.baseFontSize()}" min="21"> ) px
+      
+      <div class="kusa5box" data-name="unknown">
+        <p>？？？？</p>
+        <div><input type="checkbox" name="${Config.debug()}"> <span>デバッグモードを有効にする</span></div>
+        <div><input type="checkbox" name="${Config.noLimit()}"> <span>人としての尊厳を捨てて全てを解き放つ</span></div>
       </div>
-      <div class="mb1rem">
-        <p>コメントの透明度</p>
-        <div>opacity: <input type="number" name="${Config.commentTransparency()}" min="0" max="1" step="0.05"></div>
+      
+      <div class="kusa5box" data-name="experimental-feature">
+        <p>実験的機能</p>
+        <p style="margin-bottom: 2rem;">予告なく実装を中止する場合があります</p>
+        <div>
+          <input type="checkbox" name="${Config.autoCommentSize()}"> <span>上下コメントの文字が大きい場合にプレイヤーからはみ出さないようにフォントサイズを自動で調整する</span>
+          <div>
+            自動調整するための計算コストが大きいので動作が重くなる可能性があります<br>
+            現段階では調整によって縦のスペースが空いても詰められない制限があります
+          </div>
+        </div>
       </div>
-      <div class="mb1rem">
-        <p>コメントの速さ</p>
-        <div>左端が出てから右端が消えるまで: <input type="number" name="${Config.marqueeDuration()}" min="0"> s</div>
+      
+      <div class="kusa5box" data-name="about">
+        <p>About</p>
+        <div class="section">
+          <div style="font-size:2rem;">kusa5.mod.user.js</div>
+          <div>version: ${GM_info.script.version}</div>
+        </div>
+        
+        <div class="section">
+          <div>配布元: </div>
+          <div>Greasy Fork: <a href="https://greasyfork.org/ja/scripts/15692-kusa5-mod">https://greasyfork.org/ja/scripts/15692-kusa5-mod</a></div>
+          <div>GitHub: <a href="https://github.com/mohemohe/kusa5.mod.user.js">https://github.com/mohemohe/kusa5.mod.user.js</a></div>
+        </div>
+        <div class="section">
+          <div>バグ報告先: </div>
+          <div>GitHub Issues: <a href="https://github.com/mohemohe/kusa5.mod.user.js/issues">https://github.com/mohemohe/kusa5.mod.user.js/issues</a></div>
+        </div>
+        <div class="section">
+          <div>このユーザースクリプトは下記の成果物を含みます: </div>
+          <div><a href="https://greasyfork.org/ja/scripts/12676-kusa5/">kusa5.user.js</a></div>
+        </div>
+        <div class="section">
+          <div>このユーザースクリプトは下記の成果物を使用しています: </div>
+          <div><a href="https://jquery.com/">jQuery</a>, <a href="http://underscorejs.org/">Underscore.js</a>, <a href="http://fontawesome.io/">Font Awesome</a></div>
+        </div>
+        <div class="section">
+          <div>このユーザースクリプトの開発は下記をはじめとする方々の貢献によって支えられています: </div>
+          <div>k725, hazkyoko, taraba184, atnanasi</div>
+        </div>
+        
+        <div class="section">
+          <div></div>
+          <div>
+            <i class="fa fa-copyright" aria-hidden="true"></i>
+ 2015 mohemohe. some rights reserved.<br>
+            This user script licensed under <a herf="https://raw.githubusercontent.com/mohemohe/kusa5.mod.user.js/master/LICENSE" style="cursor: pointer;" onclick="location.href='https://raw.githubusercontent.com/mohemohe/kusa5.mod.user.js/master/LICENSE'">the Original License based on The MIT/X11 License</a>.<br>
+            I would like to express my the biggest gratitude to buhoho.
+          </div>
+        </div>
       </div>
-      <div>
-        <p>コメントイベントの最短発火間隔</p>
-        <input type="number" name="${Config.throttleComment()}" min="0"> ms
-      </div>
-    </div>
-    <div class="kusa5box">
-      <p>プレミアム会員専用</p>
-      <div><input type="checkbox" name="${Config.autoPlay()}"> <span>動画を自動再生する</span></div>
-      <div><input type="checkbox" name="${Config.monitorSizeFullScreen()}"> <span>モニターサイズでフルスクリーンにする</span></div>
-    </div>
-    <div class="kusa5box">
-      <p>NGキーワード</p>
-      <p style="display:inline-block;">正規表現が使用できます（行区切り）</p>
-      <button id="Kusa5_regexReset"><i class="fa fa-repeat"></i> リセット</button>
-      <div><textarea id="Kusa5_regex" name="${Config.ngKeyword()}"></textarea></div>
-      <input type="checkbox" name="${Config.suppress0secComment()}"> <span>0秒コメントをNGにする</span>
-    </div>
-    <div class="kusa5box">
-      <p>？？？？</p>
-      <div><input type="checkbox" name="${Config.debug()}"> <span>デバッグモードを有効にする</span></div>
-      <div><input type="checkbox" name="${Config.noLimit()}"> <span>人としての尊厳を捨てて全てを解き放つ</span></div>
     </div>
   </div>
   `;
@@ -988,20 +1076,36 @@
       });
     });
     $overlay.find('#kusa5_config_close').on('click', () => {
-      $('#kusa5_config').find('input').each((i, e) => {
-        if($(e).attr('type') === 'checkbox') {
-          Config.setValue($(e).attr('name'), $(e).prop('checked'));
-        }
-        if($(e).attr('type') === 'number') {
-          Config.setValue($(e).attr('name'), $(e).prop('value'));
-        }
-      });
-      $('#kusa5_config').find('textarea').each((i, e) => {
-        Config.setValue($(e).attr('name'), $(e).prop('value'), true);
-      });
+      setTimeout(() => {
+        $('#kusa5_config').find('input').each((i, e) => {
+          if($(e).attr('type') === 'checkbox') {
+            Config.setValue($(e).attr('name'), $(e).prop('checked'));
+          }
+          if($(e).attr('type') === 'number') {
+            Config.setValue($(e).attr('name'), $(e).prop('value'));
+          }
+        });
+        $('#kusa5_config').find('textarea').each((i, e) => {
+          Config.setValue($(e).attr('name'), $(e).prop('value'), true);
+        });
+      }, 0);
       $('#kusa5_config').hide();
       $('body').css('overflow', 'auto');
     });
+    $overlay.find('label').each((i, e) => {
+      $(e).on('click', () => {
+        setTimeout(() => {
+          $('#kusa5_config').find('.kusa5box').each((j, f) => {
+            if($(e).data('name') === $(f).data('name')) {
+              $(f).css('display', 'inline-block');
+            } else {
+              $(f).css('display', 'none');
+            }
+          });
+        }, 0);
+      });
+    });
+    
     $overlay.hide();
     return $overlay;
   }
@@ -1467,7 +1571,7 @@
     opacity: 0;
     max-width: 0em;
     overflow: hidden;
-    transition: all 0.3s ease-out, color 0.1s ease-out;
+    transition: all 0.3s ease-out, color 0.1s ease-out, background 0.3s ease-in-out;
   }
   div.ratepanel > input:checked + label {
     opacity: 1;
@@ -1475,25 +1579,43 @@
   }
   div.ratepanel:hover {
     background-color: rgba(0, 0, 0, 0.8);
-    transition: all 0.3s ease-out, color 0.1s ease-out;
+    transition: all 0.3s ease-out, color 0.1s ease-out, background 0.3s ease-in-out;
   }
   div.ratepanel:hover > label {
     opacity: 1;
     max-width: 3em;
-    transition: all 0.3s ease-out, color 0.1s ease-out;
+    transition: all 0.3s ease-out, color 0.1s ease-out, background 0.3s ease-in-out;
   }
   div.ratepanel:hover > label:hover {
     color: #0078E7;
-    transition: all 0.3s ease-out, color 0.1s ease-out;
+    transition: all 0.3s ease-out, color 0.1s ease-out, background 0.3s ease-in-out;
   }
 
-  .control-panel div.comment {
+  .control-panel div#comment-form {
     width: 100%;
     margin-left: 3em;
     display: inline-block;
   }
-  div.comment > #comment-form {
+  
+  #comment-form > div {
+    display: inline-block;
     width: calc(100% - 5em);
+    box-sizing: border-box;
+    line-height: 30px;
+  }
+  
+  #comment-form > div > #command {
+    width: 20%;
+    box-sizing: border-box;
+  }
+  
+  #comment-form > div > #comment {
+    width: 80%;
+    box-sizing: border-box;
+  }
+  
+  #comment-form > #comment-submit-btn {
+    font-size: 1rem;
   }
 
   /*
@@ -1702,6 +1824,7 @@
     height: calc(100% - 16px);
     top: 0;
     overflow-y: scroll;
+    font-size: 1rem;
   }
   
   #kusa5_config > .kusa5h1 {
@@ -1726,52 +1849,113 @@
     background: #E0E0E0;
   }
   
-  #kusa5_config > .kusa5box {
+  #kusa5_config > hr {
+    height: 0;
+    border-bottom: 1px solid white;
+  }
+  
+  #kusa5_config > .config-menu {
     display: inline-block;
-    padding-bottom: 1rem;
-    vertical-align: top;
-    width: 48%;
+    width: 320px;
     box-sizing: border-box;
   }
   
-  #kusa5_config > .kusa5box > p:first-of-type {
+  #kusa5_config > .config-menu > div > input {
+    display: none;
+  }
+  
+  #kusa5_config > .config-menu > div > input+label {
+    display: inline-block;
+    width: 100%;
+    text-align: center;
+    padding: 0.5em 0;
+    font-size: 1.5em;
+    border: 1px solid white;
+    transition: all 0.3s ease-out;
+  }
+  
+  #kusa5_config > .config-menu > div > input+label:hover {
+    background-color: #0078E7;
+    color: white;
+    transition: all 0.3s ease-out;
+  }
+  
+  #kusa5_config > .config-menu > div > input:checked+label {
+    background-color: white;
+    color: black;
+    transition: all 0.3s ease-out;
+  }
+  
+  #kusa5_config > .config-content {
+    display: inline-block;
+    vertical-align: top;
+    width: calc(100% - 330px);
+    box-sizing: border-box;
+    padding-left: 1rem;
+  }
+  
+  #kusa5_config > .config-content > .kusa5box {
+    display: none;
+    padding-bottom: 1rem;
+    vertical-align: top;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  #kusa5_config > .config-content > .kusa5box:first-child {
+    display: inline-block;
+  }
+  
+  #kusa5_config > .config-content > .kusa5box > p:first-of-type {
     font-size: 1.3rem;
     margin: 0;
     padding-left: 8px;
     border-left: 8px solid white;
     border-bottom: 1px solid white;
+    display: none;
   }
   
-  #kusa5_config > .kusa5box > div.mb1rem {
+  #kusa5_config > .config-content > .kusa5box > div.mb1rem {
     margin-bottom: 1rem;
   }
   
-  #kusa5_config > .kusa5box > div > p:first-of-type,
-  #kusa5_config > .kusa5box > div > span:first-of-type {
+  #kusa5_config > .config-content > .kusa5box > div > p:first-of-type,
+  #kusa5_config > .config-content > .kusa5box > div > span:first-of-type {
     font-weight: bold;
   }
   
-  #kusa5_config > .kusa5box > div > p {
+  #kusa5_config > .config-content > .kusa5box > div > p {
     padding: 0;
     margin: 0;
   }
   
-  #kusa5_config > .kusa5box > div > input[type="number"],
-  #kusa5_config > .kusa5box > div > div > input[type="number"] {
+  #kusa5_config > .config-content > .kusa5box > div > input[type="number"],
+  #kusa5_config > .config-content > .kusa5box > div > div > input[type="number"] {
     width: 4rem;
   }
   
-  #kusa5_config > .kusa5box > div > textarea {
+  #kusa5_config > .config-content > .kusa5box > div > textarea {
     width: 100%;
     max-width: 100%;
     height: 12rem;
   }
   
-  #kusa5_config > .kusa5box > #Kusa5_regexReset {
+  #kusa5_config > .config-content > .kusa5box > #Kusa5_regexReset {
     float: right;
     background: white;
     border: none;
   }
+  
+  #kusa5_config > .config-content > .kusa5box > .section {
+    margin-left: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  #kusa5_config > .config-content > .kusa5box > .section > *:first-child {
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  
   
   /*
   ニコニコ本家の軽微な修正
