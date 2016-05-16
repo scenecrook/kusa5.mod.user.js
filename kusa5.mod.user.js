@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     45(preview)
+// @version     45(preview2)
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -92,7 +92,7 @@
       if(!Config.isValueExist(Config.enhanceSatuate)) { Config.setValue(Config.enhanceSatuate, 100); }
       if(!Config.isValueExist(Config.fastInit)) { Config.setValue(Config.fastInit, true); }
       if(!Config.isValueExist(Config.hidePlayList)) { Config.setValue(Config.hidePlaylist, false); }
-      if(!Config.isValueExist(Config.lastVersion)) { Config.setValue(Config.lastVersion, GM_info.script.version); }
+      if(!Config.isValueExist(Config.lastVersion)) { Config.setValue(Config.lastVersion, GM_info.script.version, true); }
       if(!Config.isValueExist(Config.marqueeDuration)) { Config.setValue(Config.marqueeDuration, 7); }
       if(!Config.isValueExist(Config.monitorSizeFullScreen)) { Config.setValue(Config.monitorSizeFullScreen, true); }
       if(!Config.isValueExist(Config.muted)) { Config.setValue(Config.muted, false); }
@@ -112,6 +112,19 @@
       if(!Config.isValueExist(Config.wheelVolume)) { Config.setValue(Config.wheelVolume, false); }
       if(!Config.isValueExist(Config.wheelVolumeStep)) { Config.setValue(Config.wheelVolumeStep, 5); }
     }
+  }
+  // どうしても互換性が無くなってしまったときのアップデート処理
+  if(localStorage.Kusa5_lastVersion !== undefined && localStorage.Kusa5_lastVersion !== GM_info.script.version) {
+    switch (localStorage.Kusa5_lastVersion) {
+      case "45(preview)":
+        localStorage.removeItem("Kusa5_lastVersion");
+        break;
+    
+      default:
+        break;
+    }
+    
+    Config.setValue(Config.lastVersion, GM_info.script.version, true);
   }
   Config.initialize();
   
@@ -252,13 +265,6 @@
       for (; value.length < n; value += char);
       return value;
     }
-  }
-
-  /*
-  Update
-  ******************************************************************************/
-  if(Config.loadValue(Config.lastVersion) !== GM_info.script.version) {
-    //TODO: どうしても互換性が無くなってしまったときのアップデート処理
   }
   
   /*
