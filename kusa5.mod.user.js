@@ -25,6 +25,7 @@
   Class
   ******************************************************************************/
   class Config {
+    static accentColor() { return 'Kusa5_accentColor'; }
     static autoCommentSize() { return 'Kusa5_autoCommentSize'; }
     static autoPlay() { return 'Kusa5_autoPlay'; }
     static baseFontSize() { return 'Kusa5_baseFontSize'; }
@@ -52,6 +53,7 @@
     static useUserPlayerSize() { return 'Kusa5_useUserPlayerSize'; }
     static useUserPlayerWidth() { return 'Kusa5_useUserPlayerWidth'; }
     static useUserPlayerHeight() { return 'Kusa5_useUserPlayerHeight'; }
+    static wallColor() { return 'Kusa5_wallColor'; }
     static wheelVolume() { return 'Kusa5_wheelVolume'; }
     static wheelVolumeStep() { return 'Kusa5_wheelVolumeStep'; }
     
@@ -82,6 +84,7 @@
     
     // 冷静に考えてこれ頭悪くないすか
     static initialize() {
+      if(!Config.isValueExist(Config.accentColor)) { Config.setValue(Config.accentColor, '#0078E7', true); }
       if(!Config.isValueExist(Config.autoCommentSize)) { Config.setValue(Config.autoCommentSize, true); }
       if(!Config.isValueExist(Config.autoPlay)) { Config.setValue(Config.autoPlay, false); }
       if(!Config.isValueExist(Config.baseFontSize)) { Config.setValue(Config.baseFontSize, 21); }
@@ -109,6 +112,7 @@
       if(!Config.isValueExist(Config.useUserPlayerHeight)) { Config.setValue(Config.useUserPlayerHeight, 480); }
       if(!Config.isValueExist(Config.useUserPlayerSize)) { Config.setValue(Config.useUserPlayerSize, false); }
       if(!Config.isValueExist(Config.useUserPlayerWidth)) { Config.setValue(Config.useUserPlayerWidth, 854); }
+      if(!Config.isValueExist(Config.wallColor)) { Config.setValue(Config.wallColor, '#272727', true); }
       if(!Config.isValueExist(Config.wheelVolume)) { Config.setValue(Config.wheelVolume, false); }
       if(!Config.isValueExist(Config.wheelVolumeStep)) { Config.setValue(Config.wheelVolumeStep, 5); }
     }
@@ -1025,11 +1029,12 @@
     
     <form class="config-menu">
       <div><input type="radio" id="kcm1" name="menu" checked><label for="kcm1" data-name="generic">全般</label></div>
+      <div><input type="radio" id="kcm6" name="menu"><label for="kcm6" data-name="appearance">外観</label></div>
       <div><input type="radio" id="kcm2" name="menu"><label for="kcm2" data-name="html5-player">HTML5プレーヤー</label></div>
       <div><input type="radio" id="kcm3" name="menu"><label for="kcm3" data-name="comment">コメント全般</label></div>
       <div><input type="radio" id="kcm4" name="menu"><label for="kcm4" data-name="ng">NG</label></div>
       <div><input type="radio" id="kcm5" name="menu"><label for="kcm5" data-name="premium-feature">プレミアム会員専用</label></div>
-      <div><input type="radio" id="kcm6" name="menu"><label for="kcm6" data-name="unknown">？？？？</label></div>
+      <div><input type="radio" id="kcm97" name="menu"><label for="kcm97" data-name="unknown">？？？？</label></div>
       <div><input type="radio" id="kcm98" name="menu"><label for="kcm98" data-name="experimental-feature">実験的機能</label></div>
       <div><input type="radio" id="kcm99" name="menu"><label for="kcm99" data-name="about">About</label></div>
     </form>
@@ -1102,6 +1107,12 @@
       <div class="kusa5box" data-name="premium-feature">
         <p>プレミアム会員専用</p>
         <div><input type="checkbox" name="${Config.autoPlay()}"> <span>動画を自動再生する</span></div>
+      </div>
+      
+      <div class="kusa5box" data-name="appearance">
+        <p>外観</p>
+        <div><input type="color" name="${Config.accentColor()}"> <span>アクセントカラー</span></div>
+        <div><input type="color" name="${Config.wallColor()}"> <span>ウォールカラー</span></div>
       </div>
       
       <div class="kusa5box" data-name="unknown">
@@ -1181,6 +1192,9 @@
           if($(e).attr('type') === 'number') {
             Config.setValue($(e).attr('name'), $(e).prop('value'));
           }
+          if($(e).attr('type') === 'color') {
+            Config.setValue($(e).attr('name'), $(e).prop('value'), true);
+          }
         });
         $('#kusa5_config').find('textarea').each((i, e) => {
           Config.setValue($(e).attr('name'), $(e).prop('value'), true);
@@ -1253,6 +1267,9 @@
         $(e).prop('checked', Config.loadValue($(e).attr('name')));
       }
       if($(e).attr('type') === 'number') {
+        $(e).prop('value', Config.loadValue($(e).attr('name')));
+      }
+      if($(e).attr('type') === 'color') {
         $(e).prop('value', Config.loadValue($(e).attr('name')));
       }
     });
@@ -1502,7 +1519,7 @@
   
   #wallImageContainer .wallImageCenteringArea .wallAlignmentArea.image2{
     z-index: 3;
-    background-color: #272727;
+    background-color: ${Config.loadValue(Config.wallColor)};
   }
   #playerContainerWrapper {
     padding: 24px 0;
@@ -1553,7 +1570,7 @@
     transition: color 0.1s ease-out;
   }
   .control-panel .btn:hover {
-    color: #0078E7;
+    color: ${Config.loadValue(Config.accentColor)};
     transition: color 0.1s ease-out;
   }
   .control-panel .r {float: right;}
@@ -1573,7 +1590,7 @@
     height: 100%;
   }
   .control-panel .progressBar.seek .mainbar {
-    background: #0078E7;
+    background: ${Config.loadValue(Config.accentColor)};
   }
   .control-panel .progressBar.seek .bufferbar {
     background: hsla(0, 100%, 100%, 0.33);
@@ -1588,7 +1605,7 @@
 
   #volume-bar {
     -webkit-appearance: none;
-    background: #0078E7;
+    background: ${Config.loadValue(Config.accentColor)};
     border: 0;
     height: 5px;
     width: 0px;
@@ -1617,7 +1634,7 @@
     -moz-appearance: none;
     appearance: none;
     border: none;
-    background: #0078E7;
+    background: ${Config.loadValue(Config.accentColor)};
     opacity: 1;
     width: 8px;
     height: 16px;
@@ -1628,7 +1645,7 @@
   .volume-slider input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    background: #0078E7;
+    background: ${Config.loadValue(Config.accentColor)};
     opacity: 1;
     width: 8px;
     height: 16px;
@@ -1697,7 +1714,7 @@
     transition: all 0.3s ease-out, color 0.1s ease-out, background 0.3s ease-in-out;
   }
   div.ratepanel:hover > label:hover {
-    color: #0078E7;
+    color: ${Config.loadValue(Config.accentColor)};
     transition: all 0.3s ease-out, color 0.1s ease-out, background 0.3s ease-in-out;
   }
 
@@ -1985,7 +2002,7 @@
   }
   
   #kusa5_config > .config-menu > div > input+label:hover {
-    background-color: #0078E7;
+    background-color: ${Config.loadValue(Config.accentColor)};
     color: white;
     transition: all 0.3s ease-out;
   }
