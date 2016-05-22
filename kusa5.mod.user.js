@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     45(preview2)
+// @version     45(preview3)
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -265,6 +265,14 @@
       for (; value.length < n; value += char);
       return value;
     }
+    
+    static time2vpos(time) {
+      return Math.round(time * 100);
+    }
+    
+    static vpos2time(vpos) {
+      return vpos / 100;
+    }
   }
   
   /*
@@ -272,6 +280,7 @@
   ******************************************************************************/
   const ASKURL = 'http://flapi.nicovideo.jp/api/getflv?v=';
   const THREAD = 'http://flapi.nicovideo.jp/api/getthreadkey?thread=';
+  const POSTKEY = 'http://flapi.nicovideo.jp/api/getpostkey/?yugi=&device=1&version=1&version_sub=2';
   const apidata = JSON.parse($('#watchAPIDataContainer').text());
   const launchID = apidata.videoDetail.v; // APIに与える識別子
   const commentLines = 21;
@@ -286,10 +295,20 @@
   var ueLine = new LineManager(commentLines);
   var shitaLine = new LineManager(commentLines);
   var ngArray = [];
+  var messageServer;
+  var commentThread;
+  var commentTicket;
+  var commentPostkey;
+  var commentLastId;
 
   /*
   Debug
   ******************************************************************************/
+  function updateDebug() {
+    updateAllocatedLine();
+    updateApiInfo();
+  }
+  
   function updateAllocatedLine() {
     if(Config.loadValue(Config.debug)) {
       var normalizeNum = (n => {
@@ -318,6 +337,17 @@
         log += '\n';
       }
       $('#kusa5_lallocInfo').html(log);
+    }
+  }
+  
+  function updateApiInfo() {
+    if(Config.loadValue(Config.debug)) {
+      var log = '';
+      log += 'message server:\n' + messageServer + '\n'
+           + 'comment thread:\n' + commentThread + '\n'
+           + 'comment ticket:\n' + commentTicket + '\n'
+           + 'comment postkey:\n' + commentPostkey + '\n';
+      $('#kusa5_apiInfo').html(log);
     }
   }
 
@@ -353,6 +383,16 @@
   Niconico API
   ******************************************************************************/
   function xml2chats(xml) {
+    _.each($(xml).find('thread'), thread => _.each(thread.attributes, attr => {
+      if(attr.name === 'thread') {
+        commentThread = attr.value;
+      } else if(attr.name === 'ticket') {
+        commentTicket = attr.value;
+      } else if(attr.name === 'last_res') {
+        commentLastId = attr.value-0;
+      }
+    }));
+    updateApiInfo();
     return _.chain($(xml).find('chat'))
       .map(ch => 
         ({ t: $(ch).attr('vpos') -0, //cast
@@ -364,6 +404,7 @@
 
   var lastCommentTime = 0;
   function loadMsg(info) {
+    messageServer = info.ms;
     return $.ajax({
       type: 'GET',
       url: THREAD + info.thread_id,
@@ -820,10 +861,7 @@
     </div>
     <button class="btn rewind"><i class="fa fa-fast-backward"></i></button>
     <button class="btn toggle play"><i class="fa fa-play"></i></button>
-    <div class="combined-panel">
-      ${rateForm()}
-      ${commentForm()}
-    </div>
+    <div class="combined-panel"></div>
     <button class="btn full r"><i class="fa fa-arrows-alt"></i></button>
     <button class="btn config r"><i class="fa fa-cog"></i></button>
     <button class="btn comment-hidden r"><i class="fa fa-comment"></i></button>
@@ -842,6 +880,8 @@
 
   function ctrPanel() {
     var $panel = $(CONTROL_PANEL);
+    $panel.find('.combined-panel').append(rateForm())
+                                  .append(commentForm());
     $panel.find('.btn.full').click(FullScreen.toggle);
     $panel.find('.btn.toggle').click($video.videoToggle);
     return $panel;
@@ -909,16 +949,67 @@
 
   /*
   Comment panel (not implemented)
-  ******************************************************************************/  
+  ******************************************************************************/
+  function commentPanel() {
+    return $(`
+    <div id="comment-panel">
+      <input id="command" type="text" placeholder="color, command, etc."><!--
+      --><input id="comment" type="text" placeholder="comment（たぶんまだ動きません）">
+    </div>
+  `);
+  }
+  
+  function commentSubmitButton() {
+   return $(`<button id="comment-submit-btn" class="btn">投稿</button>`)
+          .on('click', () => {
+            var vpos = Util.time2vpos($video[0].currentTime);
+            var command = $('#comment-form #comment-panel #command')[0].value;
+            var comment = $('#comment-form #comment-panel #comment')[0].value;
+            if(comment == '') return;
+            
+            //NOTE: 最新のコメントを取得し直してcommentLastIdとpostKeyを更新し直す必要がある？
+            //TODO: コメントの再取得？　API仕様が公開されてないから必要なのか分からん
+            
+            $.ajax({
+              type: 'GET',
+              url: POSTKEY + '&block_no=' + Math.floor(((commentLastId-0) + 1) / 10) + '&thread=' + commentThread,
+              contentType: 'text/plain',
+              dataType: 'text',
+              crossDomain: true,
+              cache: false,
+              xhrFields: {'withCredentials': true},
+            }).then(postkey => {
+              commentPostkey = postkey.replace('postkey=', '');
+              var data = `<packet><chat thread="${commentThread}" vpos="${vpos}" mail="${command}" 
+                            ticket="${commentTicket}" user_id="${apidata.viewerInfo.id}" 
+                            postkey="${commentPostkey}" premium="${apidata.viewerInfo.id ? 1 : 0}">
+                              ${comment}
+                            </chat></packet>`;
+              updateApiInfo();
+              
+              $.ajax({
+                type: 'POST',
+                url: messageServer,
+                contentType: 'text/plain',
+                dataType: 'xml',
+                data: data,
+                //crossDomain: true,
+                cache: false
+                //xhrFields: {'withCredentials': true},
+              }).then(data => console.log('コメント投稿失敗', data)
+              ).done(result => {
+                console.log(result);
+                $('#comment-form #comment-panel #comment')[0].value = '';
+              });
+          });
+        });
+  }
+  
   function commentForm() {
-    return `
-      <div id="comment-form">
-        <div>
-          <input id="command" type="text" placeholder="color, command, etc." readonly="readonly"><!--
-      --><input id="comment" type="text" placeholder="新デザインプレビュー（コメント投稿はまだ未実装です）" readonly="readonly">
-        </div>
-        <button id="comment-submit-btn" class="btn">投稿</button>
-      </div>`;
+    var $form = $('<div id="comment-form"></div>');
+    $form.append(commentPanel());
+    $form.append(commentSubmitButton());
+    return $form;
   }
 
   /*
@@ -1174,7 +1265,8 @@
       $('#kusa5_debug').append('<p style="color:#64FF64;">// DEBUG:</p>');
       $('#kusa5_debug').append('<p style="position:absolute;top:0;right:4px;color:#64FF64;">&#x23ec;</p>');
       $('#kusa5_debug').append('<pre id="kusa5_lallocInfo" />');
-      updateAllocatedLine();
+      $('#kusa5_debug').append('<pre id="kusa5_apiInfo" />');
+      updateDebug();
     }
     
     updateRepeat(true);
@@ -1229,6 +1321,7 @@
     });
 
     var promise = loadApiInfo(launchID).then(info => {
+      commentServerThreadId = info.thread_id;
       $video.attr('src', info.url);
       $video.get(0).dataset.smid = launchID;
       return info;
@@ -1256,10 +1349,20 @@
       if(!keyTbl[e.keyCode]) {
         return;
       }
+      var activeElement = $(':focus').attr('id');
+      if(activeElement === 'command' || activeElement === 'comment') {
+        return;
+      }
+      
       keyTbl[e.keyCode]();
       e.preventDefault();
     });
     kusa5.keydown(e => {
+      var activeElement = $(':focus').attr('id');
+      if(activeElement === 'command' || activeElement === 'comment') {
+        return;
+      }
+      
       //ボタンの処理が登録されてたらブラウザの動作をうちけす
       if(keyTbl[e.keyCode]){
         e.preventDefault();
@@ -1565,6 +1668,7 @@
     position: relative;
     display: inline-block;
     width: calc(100% - 450px);
+    height: 100%;
   }
   
   div.ratepanel {
