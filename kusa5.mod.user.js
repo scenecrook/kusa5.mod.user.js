@@ -2,7 +2,7 @@
 // @name        kusa5.mod
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
-// @version     45(preview3)
+// @version     45(preview4)
 // @grant       none
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
@@ -1408,6 +1408,29 @@
       $video.get(0).volume = volume;
       Config.setValue(Config.nicoVolume, parseInt(volume * 100));
       updateSlider();
+    });
+    
+    // リンク遷移
+    $('body').on('click', e => {
+      // タグ
+      if(e.target.classList.length !== 0 && e.target.classList[0] === 'videoHeaderTagLink') {
+        location.href = e.target.href;
+      }
+      
+      // 親ノードを含めaリンクを探す
+      var currentNode = e.target;
+      while(currentNode.nodeName.toLowerCase() !== 'html') {
+        if(currentNode.nodeName.toLowerCase() === 'a') {
+          // 再生リストのリンク
+          if(currentNode.classList.length !== 0 && currentNode.classList[0] === 'itemLink') {
+            // 再生リストの一番左（再生中の動画）ではない
+            if(location.href !== currentNode.href) {
+              location.href = currentNode.href;
+            }
+          }
+        }
+        currentNode = currentNode.parentNode;
+      }
     });
     
     //メッセージ取得、文字流しとかのループイベント登録
