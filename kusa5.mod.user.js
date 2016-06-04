@@ -279,6 +279,41 @@
     }
   }
   
+  class StateWatcher {
+    static onStateChange(func) {
+      this.onStateChangeFunction = func;
+    }
+    
+    static watchState() {
+      var state = history.state;
+      if(StateWatcher.state !== state) {
+        StateWatcher.state = state;
+        if(StateWatcher.getState() !== null && (StateWatcher.onStateChangeFunction !== undefined || StateWatcher.onStateChangeFunction !== null)) {
+          StateWatcher.onStateChangeFunction();
+        }
+      }
+    }
+    
+    static getState() {
+      if(this.state === undefined || this.state === null) {
+        this.state = history.state;
+      }
+      return JSON.parse(this.state);
+    }
+    
+    static startWatch(interval = 125) {
+      if(this.id !== undefined || this.id !== null) {
+        clearInterval(this.id);
+      }
+      this.id = setInterval(this.watchState, interval);
+    }
+    
+    static stopWatch() {
+      clearInterval(this.id);
+      this.id = null;
+    }
+  }
+  
   /*
   Value
   ******************************************************************************/
@@ -1410,28 +1445,40 @@
       updateSlider();
     });
     
-    // リンク遷移
-    $('body').on('click', e => {
-      // タグ
-      if(e.target.classList.length !== 0 && e.target.classList[0] === 'videoHeaderTagLink') {
-        location.href = e.target.href;
-      }
-      
-      // 親ノードを含めaリンクを探す
+    // 親ノードを含めaリンクを探す
+    var recursiveHref = (e => {
       var currentNode = e.target;
-      while(currentNode.nodeName.toLowerCase() !== 'html') {
+      while(currentNode !== null && currentNode.nodeName.toLowerCase() !== 'html') {
         if(currentNode.nodeName.toLowerCase() === 'a') {
           // 再生リストのリンク
-          if(currentNode.classList.length !== 0 && currentNode.classList[0] === 'itemLink') {
-            // 再生リストの一番左（再生中の動画）ではない
-            if(location.href !== currentNode.href) {
-              location.href = currentNode.href;
-            }
+          if(_.contains(currentNode.classList, 'itemLink')) {
+            location.href = currentNode.href;
+            return;
           }
         }
         currentNode = currentNode.parentNode;
       }
     });
+    
+    // リンク遷移
+    $(window).on('click', e => {
+      if(Config.loadValue(Config.debug)) console.log(e);
+      
+      // タグ
+      if(_.contains(e.target.classList, 'videoHeaderTagLink', 'mylistLinkButton')) {
+      //if(_.contains(e.target.classList, 'videoHeaderTagLink')) {
+        location.href = e.target.href;
+      }
+      
+      recursiveHref(e);
+    });
+    StateWatcher.onStateChange(() => {
+      _.each($('.mylistLinkButton'), element => {
+        $(element).removeClass('mylistLinkButton');
+        $(element).off();
+      });
+    });
+    StateWatcher.startWatch();
     
     //メッセージ取得、文字流しとかのループイベント登録
     promise.then(loadMsg);
