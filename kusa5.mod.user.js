@@ -813,7 +813,7 @@
       
       if(msgPos === posTable.naka) {
         //オーバーシュート
-       $m.css('transform', `translate(-${baseW + $m.width()*2 + 10}px,0)`);
+        $m.css('transform', `translate(-${baseW + $m.width()*2 + 10}px,0)`);
       } else {
         // 静止
         if(Config.loadValue(Config.autoCommentSize)) {
@@ -1593,7 +1593,7 @@
   #playerContainerWrapper {
     padding: 24px 0;
   }
-  .playerContainer > .msg {
+  #kusa5 > .msg {
     opacity:${Config.loadValue(Config.commentTransparency)}
   }
   input, button {
