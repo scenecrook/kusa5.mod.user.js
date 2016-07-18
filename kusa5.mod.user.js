@@ -630,33 +630,33 @@
   Comment
   ******************************************************************************/
   const colorTable = {
-    white:   '#FFFFFF',
-    red:     '#FF0000',
-    pink:    '#FF8080',
-    orange:  '#FFC000',
-    yellow:  '#FFFF00',
-    green:   '#00FF00',
-    cyan:    '#00FFFF',
-    blue:    '#0000FF',
-    purple:  '#C000FF',
-    black:   '#000000',
-    white2:  '#CCCC99',
-    niconicowhite: '#CCCC99',
-    red2:    '#CC0033',
-    truered: '#CC0033',
-    pink2:   '#FF33CC',
-    orange2: '#FF6600',
-    passionorange: '#FF6600',
-    yellow2: '#999900',
-    madyellow: '#999900',
-    green2:  '#00CC66',
-    elementalgreen: '#00CC66',
-    cyan2:   '#00CCCC',
-    blue2:   '#3399FF',
-    marineblue: '#3399FF',
-    purple2: '#6633CC',
-    nobleviolet: '#6633CC',
-    black2:  '#666666',
+    white:   '#FFF',
+    red:     '#F00',
+    pink:    '#F88',
+    orange:  '#FC0',
+    yellow:  '#FF0',
+    green:   '#0F0',
+    cyan:    '#0FF',
+    blue:    '#00F',
+    purple:  '#C0F',
+    black:   '#000',
+    white2:  '#CC9',
+    niconicowhite: '#CC9',
+    red2:    '#D03',
+    truered: '#D03',
+    pink2:   '#F3D',
+    orange2: '#F60',
+    passionorange: '#F60',
+    yellow2: '#AA0',
+    madyellow: '#AA0',
+    green2:  '#0D6',
+    elementalgreen: '#0D6',
+    cyan2:   '#0CC',
+    blue2:   '#3AF',
+    marineblue: '#3AF',
+    purple2: '#63D',
+    nobleviolet: '#63D',
+    black2:  '#666',
   };
 
   const sizeTable = {
@@ -811,10 +811,9 @@
         }
       });
       
-      $m.css('opacity', Config.loadValue(Config.commentTransparency));
       if(msgPos === posTable.naka) {
         //オーバーシュート
-        $m.css('transform', `translate3d(-${baseW + $m.width()*2 + 10}px, 0, 0)`);
+       $m.css('transform', `translate(-${baseW + $m.width()*2 + 10}px,0)`);
       } else {
         // 静止
         if(Config.loadValue(Config.autoCommentSize)) {
@@ -823,7 +822,7 @@
             $m.css('font-size', '-=1');
           }
         }
-        $m.css('transform', `translate3d(0, 0, 0)`)
+        $m.css('transform', `translate(0,0)`)
           .css('padding', 0)
           .css('margin-left', `-${$m.width() / 2}px`);
         setTimeout(msg => {
@@ -1594,7 +1593,9 @@
   #playerContainerWrapper {
     padding: 24px 0;
   }
-  
+  .playerContainer > .msg {
+    opacity:${Config.loadValue(Config.commentTransparency)}
+  }
   input, button {
     outline: 0;
   }
@@ -1612,17 +1613,17 @@
     position:absolute;
     bottom: 0;
     width: 100%;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.6);
     transition: max-height .2s;
     height: 5px !important;
     opacity: 0.666 !important;
-    transition: all 0.3s ease-out 2.7s; 
+    transition: all .1s ease-out .15s; 
     overflow: hidden;
     cursor: default;
   }
   #kusa5:hover .control-panel {
     height: 46px !important; /* 表示 */
-    opacity: 1 !important;
+    opacity: .8 !important;
     transition: all 0.3s ease-out; 
   }
   
@@ -2015,7 +2016,7 @@
     position: fixed;
     z-index: 9999;
     color: white;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.3);
     padding: 8px;
     width: calc(100% - 16px);
     height: calc(100% - 16px);
