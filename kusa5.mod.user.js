@@ -242,7 +242,7 @@
           $('#siteHeader').show();
           $('.btn_feedback').show();
           $('.videoHeaderOuter').show();
-          if(Config.loadValue(Config.hidePlayList) === true) {
+          if(Config.loadValue(Config.hidePlayList) === 'true') {
             $('#playlist').hide();
           }
           $('#kusa5').removeClass('browser-full-screen');
@@ -393,9 +393,9 @@
   /*
   Player
   ******************************************************************************/
-  const $video = $(`<video type="video/mp4"'
+  const $video = $(`<video type="video/mp4"
         codecs="avc1.42E01E, mp4a.40.2"
-        autoplay muted preload="auto" />`)
+        autoplay muted preload="auto">`)
     .on('pause', ev => Config.setValue(Config.nicoRate, ev.target.playbackRate))
     .on('play',  ev => {
       // レート情報の記憶
@@ -1593,9 +1593,6 @@
   #playerContainerWrapper {
     padding: 24px 0;
   }
-  #kusa5 > .msg {
-    opacity:${Config.loadValue(Config.commentTransparency)}
-  }
   input, button {
     outline: 0;
   }
@@ -1834,6 +1831,8 @@
     text-align: center;
     text-shadow: 1px 2px 0px #000;
     top: 0;
+    opacity:${Config.loadValue(Config.commentTransparency)};
+    text-shadow:2px 2px 2px #000;
   } 
   
   #kusa5 .ue,
