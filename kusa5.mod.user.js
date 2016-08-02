@@ -20,6 +20,24 @@
 // @description ニコ動html5表示
 // ==/UserScript==
 
+/*
+** blcoklist ublockかなんかでmylistに追加
+! nicovideo
+
+! 動画再生に影響なし ||res.nimg.jp/js/nicolib/SuggestSearch/nicolib-SuggestSearch.js
+||res.nimg.jp/js/watch/prepare/
+||res.nimg.jp/js/watch_common/
+||res.nimg.jp/js/watch/watch/
+||res.nimg.jp/js/watch/player/
+||res.nimg.jp/js/watch/lib/jquery-ui/ui/
+||res.nimg.jp/js/watch/ichiba/ichiba_zero.js
+||res.nimg.jp/js/nicoheader/nicolib-CommonNotificationHeader.js
+
+||res.nimg.jp/scripts/common/tracking/
+||dic.nicovideo.jp/js/
+||ichiba.nicovideo.jp
+||notification.nicovideo.jp/res/
+*/
 (() => {
   /*
   Class
@@ -339,7 +357,70 @@
   var commentTicket;
   var commentPostkey;
   var commentLastId;
- 
+    
+    //設定してても無理じゃない？
+    $('#playlist').hide();
+    // なんで投稿者を動的に読み込むんだろう。
+    document.getElementsByClassName("userName")[1].href = "user/" + apidata.uploaderInfo.id ;
+    // 取り敢えず登録。くっそ適当(本当に)
+    document.getElementById('videoInfoHead').innerHTML
+        += "<button id='toriaezu'></button>"
+        +  "<style>#toriaezu{background-color:#000;color:#ddd;font-size:.6em;width:7em;}</style>";
+    
+    const toriaezu = document.getElementById("toriaezu");
+    const registerVars = {
+        func  :[okiniRemove,toriaezuRegister],
+        string:["とりあえず登録","登録解除する"],
+    };
+    //くそわかりやすい
+    function registerSwitch(register=true){
+        let i = register+0;
+        toriaezu.removeEventListener("click",registerVars.func[i]);
+        toriaezu.innerHTML=registerVars.string[i];
+        toriaezu.addEventListener("click",registerVars.func[!i+0]);
+    }
+    
+    if(apidata.flashvars.noDeflistAdd　===　'1'){
+        registerSwitch(true);
+    }else{
+        registerSwitch(false);
+    }
+    function toriaezuRegister(){
+        $.ajax({
+            type:'POST',
+            dataType:'json',
+            url:'/api/deflist/add',
+            data:{
+                'item_id'  :apidata.flashvars.videoId,
+                'token'    :apidata.flashvars.csrfToken,
+                'unwatched':0,
+            },
+            success:(e)=>{
+                if(e.status !== "ok"){
+                    alert(e.error.description);
+                }
+                registerSwitch(true);
+            },
+        });
+    }
+    function okiniRemove(){
+        $.ajax({
+            type:'POST',
+            dataType:'json',
+            url:'/api/deflist/delete',
+            data:{
+                'id_list[0][]':apidata.videoDetail.thread_id,
+                'token'       :apidata.flashvars.csrfToken,
+            },
+            success:(e)=>{
+                if(e.status !== "ok"){
+                    alert(e.error.description);
+                }
+                registerSwitch(false);
+            },
+        });
+    }
+
   /*
   Debug
   ******************************************************************************/
