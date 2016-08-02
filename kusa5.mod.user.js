@@ -339,7 +339,7 @@
   var commentTicket;
   var commentPostkey;
   var commentLastId;
-
+ 
   /*
   Debug
   ******************************************************************************/
@@ -1258,10 +1258,56 @@
   /*
   Initialize
   ******************************************************************************/
+
   var initKusa5 = (() => {
+    /* 
+    function queryStringToObject(query) {
+        var vars = query.split('&')
+        var res = {};
+        for(var i = 0; i < vars.length; i++) {
+            var pair = vars[i].split('=');
+            res[pair[0]] = pair[1];	
+        }
+        return res;
+    }
+*/
+    console.log(apidata);
+    let Flash = false;
     if(apidata.flashvars.movie_type !== 'mp4') {
-      $('.videoDetailExpand').append('<p style="color: #333;font-size: 185%;z-index: 2;line-height: 1.2;display: table-cell;vertical-align: middle;word-break: break-all;word-wrap: break-word;max-width: 672px;margin-right: 10px;">（kusa5.mod.user.js 非対応）</p>')
-      return;
+        //const url = decodeURIComponent(queryStringToObject(decodeURIComponent(apidata.flashvars.flvInfo)).url);
+        Flash = true;
+        $.ajax({
+            type:'GET',
+            url:'/watch/'+apidata.videoDetail.v,
+            data:{
+                mode:"sp_web_html5",
+                playlist_token:apidata.playlistToken,
+            },
+            success:(e)=>{
+                console.log(e);
+            },
+        });
+            
+        /* 
+        ** mp4じゃなくても再生する。
+        ** スマートフォン版のサイトでは再生できるのでそっからぱくる
+        ** smileに渡すのはvじゃなくm ,最後にlowをつけなくてはいけない？↓こんなん
+        ** http://smile-fnl30.nicovideo.jp/smile?m=29339066.91211low
+        
+        ** Cookieのnicohistoryを設定する必要がある。下のみたいなのをデコードしたのをセットする
+        ** sm29339066:1469943755:1469943755:3595ea39815d32cc:6
+        ** [動画の番号]:[なんかのunix時間]:[なんかのunix時間]:[なんか]:[なんか(なんでもいい)]
+        ** 全くわからん。適当なのじゃあかん
+        
+        ** 普通にPC版のサイトにアクセスしてもクッキーを貰えるが、それでスマートフォン版の動画(smile?m)は駄目
+        ** クッキーは/watch/sm29283862 とかで貰える
+        ** スマートフォン版だと↓こんなん
+        ** /watch/sm29284006?mode=sp_web_html5&playlist_token=sm29284006_1469967551_7c51760174282965cfdaaf0d0eaaedca8b0f80e5
+        ** 面倒なのでスマートフォン版のサイトに飛ばしたい
+        ** てかもうスマートフォン版のサイトでいいじゃない
+        
+        ** なんかできた。
+        */ 
     }
     
     generateNGarray();
@@ -1373,6 +1419,9 @@
 
     var promise = loadApiInfo(launchID).then(info => {
       commentServerThreadId = info.thread_id;
+      if(Flash){
+          info.url = info.url.replace("smile?v","smile?m");
+      }
       $video.attr('src', info.url);
       $video.get(0).dataset.smid = launchID;
       return info;
@@ -1821,7 +1870,7 @@
     display: inline-block;
     word-break: keep-all;
     white-space: pre;
-    font-family: "Arial", "sans-serif"; /* 確か元のFlashプレーヤーはArial指定になっていたはず　要するにブラウザ任せ */
+    font-family: "Arial", "sans-serif"; /* 確か元のhhプレーヤーはArial指定になっていたはず　要するにブラウザ任せ */
     color: white;
     padding: 0 .5em;
     position: absolute;
