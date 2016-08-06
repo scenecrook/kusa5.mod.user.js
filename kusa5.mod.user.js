@@ -20,24 +20,6 @@
 // @description ニコ動html5表示
 // ==/UserScript==
 
-/*
-** blcoklist ublockかなんかでmylistに追加
-! nicovideo
-
-! 動画再生に影響なし ||res.nimg.jp/js/nicolib/SuggestSearch/nicolib-SuggestSearch.js
-||res.nimg.jp/js/watch/prepare/
-||res.nimg.jp/js/watch_common/
-||res.nimg.jp/js/watch/watch/
-||res.nimg.jp/js/watch/player/
-||res.nimg.jp/js/watch/lib/jquery-ui/ui/
-||res.nimg.jp/js/watch/ichiba/ichiba_zero.js
-||res.nimg.jp/js/nicoheader/nicolib-CommonNotificationHeader.js
-
-||res.nimg.jp/scripts/common/tracking/
-||dic.nicovideo.jp/js/
-||ichiba.nicovideo.jp
-||notification.nicovideo.jp/res/
-*/
 (() => {
   /*
   Class
@@ -74,6 +56,7 @@
     static wallColor() { return 'Kusa5_wallColor'; }
     static wheelVolume() { return 'Kusa5_wheelVolume'; }
     static wheelVolumeStep() { return 'Kusa5_wheelVolumeStep'; }
+    static alwaysLowQuality() { return 'Kusa5_alwaysLowQuality';}
     
     static loadValue(item) {
       if(typeof item === 'function') {
@@ -133,6 +116,7 @@
       if(!Config.isValueExist(Config.wallColor)) { Config.setValue(Config.wallColor, '#272727', true); }
       if(!Config.isValueExist(Config.wheelVolume)) { Config.setValue(Config.wheelVolume, false); }
       if(!Config.isValueExist(Config.wheelVolumeStep)) { Config.setValue(Config.wheelVolumeStep, 5); }
+      if(!Config.isValueExist(Config.alwaysLowQuality)) { Config.setValue(Config.alwaysLowQuality, false); }
     }
   }
   // どうしても互換性が無くなってしまったときのアップデート処理
@@ -357,15 +341,31 @@
   var commentTicket;
   var commentPostkey;
   var commentLastId;
-    
+  
+    let tagContainer='<div class="tags_oresama">';
+    for(let tag of apidata.videoDetail.tagList){
+        tagContainer += '<div class="tag_oresama">'
+          +  '<a href="/tag/'+ tag.tag +'">'+ tag.tag +'</a>';
+        if(tag.dic){
+            tagContainer += '<a class="enable_dic" href="http://dic.nicovideo.jp/a/'+ tag.tag +'">[百]</a>';
+        }
+        tagContainer += '</div>';
+    }
+    tagContainer += '</div>'
+      +  '<style>.tags_oresama,.tag_oresama{display:inline-block}.tag_oresama{border:1px #aaa solid}.tags_oresama .enable_dic{color:#a00 !important}</style>';
+    const spLink = '<a href="http://sp.nicovideo.jp/watch/'+ apidata.videoDetail.v + '">携帯版(再生出来ない場合)</a>';
+
     //設定してても無理じゃない？
     $('#playlist').hide();
     // なんで投稿者を動的に読み込むんだろう。
-    document.getElementsByClassName("userName")[1].href = "user/" + apidata.uploaderInfo.id ;
+    try{
+   	    document.getElementsByClassName("userName")[1].href = "user/" + apidata.uploaderInfo.id ;
+   	}catch(e){
+   	}
     // 取り敢えず登録。くっそ適当(本当に)
     document.getElementById('videoInfoHead').innerHTML
-        += "<button id='toriaezu'></button>"
-        +  "<style>#toriaezu{background-color:#000;color:#ddd;font-size:.6em;width:7em;}</style>";
+        += "<button id='toriaezu'></button><style>.tag_ore{border:1px #aaa solid;padding:1px;margin:2px;}#toriaezu{background-color:#000;color:#ddd;font-size:.6em;width:7em;}</style>"
+        +  tagContainer + spLink ;
     
     const toriaezu = document.getElementById("toriaezu");
     const registerVars = {
@@ -909,7 +909,7 @@
         setTimeout(msg => {
           msg.remove();
           free();
-        }, 5000, $m);
+        }, 3500, $m);
       }
       //アニメ停止で自動削除
       $m.on('transitionend', ev => {
@@ -1159,6 +1159,7 @@
         <p>全般</p>
         <div><input type="checkbox" name="${Config.fastInit()}"> <span>Kusa5.modを高速に初期化する</span>（ページ読み込み直後のCPU使用率大）</div>
         <div><input type="checkbox" name="${Config.hidePlayList()}"> <span>再生リストを非表示にする</span></div>
+        <div><input type="checkbox" name="${Config.alwaysLowQuality()}"> <span>常にエコノミーで再生する</span></div>
       </div>
       
       <div class="kusa5box" data-name="html5-player">
@@ -1339,56 +1340,33 @@
   /*
   Initialize
   ******************************************************************************/
-
   var initKusa5 = (() => {
-    /* 
-    function queryStringToObject(query) {
-        var vars = query.split('&')
-        var res = {};
-        for(var i = 0; i < vars.length; i++) {
-            var pair = vars[i].split('=');
-            res[pair[0]] = pair[1];	
-        }
-        return res;
-    }
-*/
-    console.log(apidata);
     let Flash = false;
-    if(apidata.flashvars.movie_type !== 'mp4') {
-        //const url = decodeURIComponent(queryStringToObject(decodeURIComponent(apidata.flashvars.flvInfo)).url);
+    // ピーク時に余計なことすると403なので(ニコニコ動画きびしいね)
+    let alwaysLowQuality = Config.loadValue(Config.alwaysLowQuality) || apidata.isPeakTime;
+      if(apidata.flashvars.movie_type !== 'mp4') {
         Flash = true;
+        $('.videoDetailExpand').append('<span style="color:#900;display:table-cell;vertical-align:middle;padding-left:1em;">(Flashです。)</span>')
+        let sendData = {
+                mode:"sp_web_html5",
+                playlist_token:apidata.playlistToken
+        };
+        if(alwaysLowQuality){
+            $.extend(sendData,{eco:"1"});
+        }
+        $.ajax({
+            type:'GET',
+            url:'/watch/'+apidata.videoDetail.v,
+            data:sendData,
+        });
+    }else if(alwaysLowQuality){
         $.ajax({
             type:'GET',
             url:'/watch/'+apidata.videoDetail.v,
             data:{
-                mode:"sp_web_html5",
-                playlist_token:apidata.playlistToken,
-            },
-            success:(e)=>{
-                console.log(e);
+                eco:"1"
             },
         });
-            
-        /* 
-        ** mp4じゃなくても再生する。
-        ** スマートフォン版のサイトでは再生できるのでそっからぱくる
-        ** smileに渡すのはvじゃなくm ,最後にlowをつけなくてはいけない？↓こんなん
-        ** http://smile-fnl30.nicovideo.jp/smile?m=29339066.91211low
-        
-        ** Cookieのnicohistoryを設定する必要がある。下のみたいなのをデコードしたのをセットする
-        ** sm29339066:1469943755:1469943755:3595ea39815d32cc:6
-        ** [動画の番号]:[なんかのunix時間]:[なんかのunix時間]:[なんか]:[なんか(なんでもいい)]
-        ** 全くわからん。適当なのじゃあかん
-        
-        ** 普通にPC版のサイトにアクセスしてもクッキーを貰えるが、それでスマートフォン版の動画(smile?m)は駄目
-        ** クッキーは/watch/sm29283862 とかで貰える
-        ** スマートフォン版だと↓こんなん
-        ** /watch/sm29284006?mode=sp_web_html5&playlist_token=sm29284006_1469967551_7c51760174282965cfdaaf0d0eaaedca8b0f80e5
-        ** 面倒なのでスマートフォン版のサイトに飛ばしたい
-        ** てかもうスマートフォン版のサイトでいいじゃない
-        
-        ** なんかできた。
-        */ 
     }
     
     generateNGarray();
@@ -1499,9 +1477,11 @@
     });
 
     var promise = loadApiInfo(launchID).then(info => {
-      commentServerThreadId = info.thread_id;
       if(Flash){
-          info.url = info.url.replace("smile?v","smile?m");
+          info.url = info.url.replace("?v","?m");
+      }
+      if(alwaysLowQuality){
+          info.url += "low";
       }
       $video.attr('src', info.url);
       $video.get(0).dataset.smid = launchID;
@@ -1959,7 +1939,9 @@
     transition-timing-function: linear;
     transition-property: transform;
     text-align: center;
-    text-shadow: 1px 2px 0px #000;
+	text-shadow:
+		-2px -2px #666,
+		2px -2px #666;
     top: 0;
     opacity:${Config.loadValue(Config.commentTransparency)};
     text-shadow:2px 2px 2px #000;
@@ -2171,6 +2153,7 @@
     font-size: 1.3rem;
     font-family: monospace;
     font-weight: bold;
+    z-index:4;
   }
   #kusa5_config > #kusa5_config_close:hover {
     background: #E0E0E0;
