@@ -1342,8 +1342,9 @@
   ******************************************************************************/
   var initKusa5 = (() => {
     let Flash = false;
+      console.log(apidata);
     // ピーク時に余計なことすると403なので(ニコニコ動画きびしいね)
-    let alwaysLowQuality = Config.loadValue(Config.alwaysLowQuality) || apidata.isPeakTime;
+    let alwaysLowQuality = Config.loadValue(Config.alwaysLowQuality) && !apidata.flashvars.isPeakTime;
       if(apidata.flashvars.movie_type !== 'mp4') {
         Flash = true;
         $('.videoDetailExpand').append('<span style="color:#900;display:table-cell;vertical-align:middle;padding-left:1em;">(Flashです。)</span>')
@@ -1477,6 +1478,7 @@
     });
 
     var promise = loadApiInfo(launchID).then(info => {
+      window.commentServerThreadId = info.thread_id;
       if(Flash){
           info.url = info.url.replace("?v","?m");
       }
