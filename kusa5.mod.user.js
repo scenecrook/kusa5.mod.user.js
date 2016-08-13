@@ -3,7 +3,7 @@
 // @namespace   net.ghippos.kusa5
 // @include     http://www.nicovideo.jp/watch/*
 // @version     45(preview4)
-// @grant       none
+// @grant       GM_xmlhttpRequest
 // @description ニコ動html5表示（改造版）
 // @license     MIT License
 // ==/UserScript==
@@ -202,7 +202,7 @@
       if(document.mozFullScreen || document.webkitIsFullScreen ||
         (document.fullScreenElement && document.fullScreenElement !== null)) {
         FullScreen.cancel();
-        
+
         if(this.controlPanelTimeout !== null || this.controlPanelTimeout !== undefined) {
           clearTimeout(this.controlPanelTimeout);
         }
@@ -224,9 +224,11 @@
             }
             this.mousePosition = e;
             $('#kusa5 .control-panel').addClass('control-panel-show');
+			$('#kusa5').css('cursor','default');
             this.controlPanelTimeout = setTimeout(() => {
               $('#kusa5 .control-panel.control-panel-show').removeClass('control-panel-show');
-            }, 5000);
+			  $('#kusa5').css('cursor','none');
+            }, 1500);
           }
         });
       }
@@ -342,6 +344,12 @@
   var commentPostkey;
   var commentLastId;
   
+	if(apidata.flashvars.v.indexOf("nm") === 0){
+		alert("諦めてください");
+        //$('.videoDetailExpand').append('<span style="color:#F00;display:table-cell;vertical-align:middle;padding-left:1em;">(諦めて下さい:nm)</span>')
+		return ;
+	}
+
     let tagContainer='<div class="tags_oresama">';
     for(let tag of apidata.videoDetail.tagList){
         tagContainer += '<div class="tag_oresama">'
@@ -364,13 +372,13 @@
    	}
     // 取り敢えず登録。くっそ適当(本当に)
     document.getElementById('videoInfoHead').innerHTML
-        += "<button id='toriaezu'></button><style>.tag_ore{border:1px #aaa solid;padding:1px;margin:2px;}#toriaezu{background-color:#000;color:#ddd;font-size:.6em;width:7em;}</style>"
+        += "<button id='toriaezu'></button><style>.tag_ore{border:1px #aaa solid;padding:1px;margin:2px;}#toriaezu{background-color:#000;color:#ddd;font-size:.6em;width:9em;}</style>"
         +  tagContainer + spLink ;
     
     const toriaezu = document.getElementById("toriaezu");
     const registerVars = {
         func  :[okiniRemove,toriaezuRegister],
-        string:["とりあえず登録","登録解除する"],
+        string:["とりあえず登録","登録解除"],
     };
     //くそわかりやすい
     function registerSwitch(register=true){
@@ -696,7 +704,7 @@
   function loadApiInfo(id) {
     return $.ajax({
       'type': 'GET',
-      'url': ASKURL + id,
+      'url': ASKURL + id + '&device=iphone3',
       'crossDomain': true,
       'cache': false,
       'xhrFields': {'withCredentials': true} // Cookie認証が必要
@@ -808,6 +816,7 @@
       
       var line = (() => {
         switch (msgPos) {
+			//ここの処理で止まる(Chromium 52)
           case posTable.ue:
             return (() => {
               var index = 0;
@@ -891,7 +900,7 @@
           }
         }
       });
-      
+	  
       if(msgPos === posTable.naka) {
         //オーバーシュート
         $m.css('transform', `translate(-${baseW + $m.width()*2 + 10}px,0)`);
@@ -1342,15 +1351,64 @@
   ******************************************************************************/
   var initKusa5 = (() => {
     let Flash = false;
-      console.log(apidata);
-    // ピーク時に余計なことすると403なので(ニコニコ動画きびしいね)
-    let alwaysLowQuality = Config.loadValue(Config.alwaysLowQuality) && !apidata.flashvars.isPeakTime;
-      if(apidata.flashvars.movie_type !== 'mp4') {
+    let alwaysLowQuality = Config.loadValue(Config.alwaysLowQuality) && apidata.flashvars.iee === '1';
+	let promise;
+    if(apidata.flashvars.movie_type === 'mp4') {
+		if(alwaysLowQuality){
+              $.ajax({
+                  type:'GET',
+                  url:'/watch/'+apidata.videoDetail.v,
+                  data:{
+                      eco:"1"
+                  },
+              });
+          }
+    }else{
         Flash = true;
+		GM_xmlhttpRequest({
+			method:"GET",
+			url:"http://sp.nicovideo.jp/watch/" + apidata.flashvars.v ,
+			synchronous:false,
+			onload:(r)=>{
+				// 使えなかった正規表現(Chromium 52) /(?<=data-watch_api_url=\").*?(?=\")/
+				let apiUrl = r.response.match(/data-watch_api_url=\".*?(?=\")/)[0];
+				apiUrl = apiUrl.slice(apiUrl.indexOf('"') + 1); // 先読みが使えたらいらない
+				apiUrl = apiUrl.replace(/&amp;/g,'&');
+				//動画読み込みの前にこの処理が完了している必要がある
+				$.ajax({
+					type:'GET',
+					url:apiUrl,
+					// キタナイ
+					success:()=>{
+						promise = loadApiInfo(launchID).then(info => {
+							window.commentServerThreadId = info.thread_id;
+							if(Flash){
+								info.url = info.url.replace("?v","?m");
+							}
+							if(alwaysLowQuality  && info.url.slice(-3) !== 'low'){
+								//lowをつけないと駄目な場合とつけると動かない場合がある(同時刻、isPeakTimeはtrueで確認)
+								//めんどいのでinfo.urlにlowが含まれるかどうかだけで判断する
+								if (info.url.slice(-3) !== 'low'){
+								  info.url += 'low';
+								}
+							}
+							$video.attr('src', info.url);
+							$video.get(0).dataset.smid = launchID;
+							return info;
+						});
+						//メッセージ取得、文字流しとかのループイベント登録
+						promise.then(loadMsg);
+					}
+				});
+			}
+		})
+
         $('.videoDetailExpand').append('<span style="color:#900;display:table-cell;vertical-align:middle;padding-left:1em;">(Flashです。)</span>')
+		/*
+		let oldPlaylistToken = apidata.flashvars.v + apidata.playlistToken.substr(apidata.playlistToken.indexOf('_'));
         let sendData = {
-                mode:"sp_web_html5",
-                playlist_token:apidata.playlistToken
+             mode:"sp_web_html5",
+             playlist_token:apidata.playlistToken
         };
         if(alwaysLowQuality){
             $.extend(sendData,{eco:"1"});
@@ -1360,16 +1418,8 @@
             url:'/watch/'+apidata.videoDetail.v,
             data:sendData,
         });
-    }else if(alwaysLowQuality){
-        $.ajax({
-            type:'GET',
-            url:'/watch/'+apidata.videoDetail.v,
-            data:{
-                eco:"1"
-            },
-        });
+		*/
     }
-    
     generateNGarray();
     
     $('.notify_update_flash_player').hide();
@@ -1477,20 +1527,7 @@
       $('body').css('overflow', 'hidden');
     });
 
-    var promise = loadApiInfo(launchID).then(info => {
-      window.commentServerThreadId = info.thread_id;
-      if(Flash){
-          info.url = info.url.replace("?v","?m");
-      }
-      if(alwaysLowQuality){
-          info.url += "low";
-      }
-      $video.attr('src', info.url);
-      $video.get(0).dataset.smid = launchID;
-      return info;
-    });
-    
-    var timeDrag = false;  /* Drag status */
+   var timeDrag = false;  /* Drag status */
     $('.progressBar.seek').mousedown(function (e) {
       timeDrag = true;
       updateBar(e);
@@ -1591,8 +1628,6 @@
     });
     StateWatcher.startWatch();
     
-    //メッセージ取得、文字流しとかのループイベント登録
-    promise.then(loadMsg);
   });
   
   /*
