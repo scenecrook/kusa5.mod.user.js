@@ -1349,22 +1349,37 @@
   /*
   Initialize
   ******************************************************************************/
-  var initKusa5 = (() => {
-    let Flash = false;
-    let alwaysLowQuality = Config.loadValue(Config.alwaysLowQuality) && apidata.flashvars.iee === '1';
-	let promise;
-    if(apidata.flashvars.movie_type === 'mp4') {
+	var initKusa5 = (() => {
+	let Flash = false;
+	let alwaysLowQuality = Config.loadValue(Config.alwaysLowQuality) && apidata.flashvars.iee === '1';
+
+	const load = ()=>{
+		loadApiInfo(launchID).then(info => {
+			window.commentServerThreadId = info.thread_id;
+			if(Flash){
+				info.url = info.url.replace("?v","?m");
+			}
+			if(alwaysLowQuality  && info.url.slice(-3) !== 'low'){
+				info.url += 'low';
+			}
+			$video.attr('src', info.url);
+			$video.get(0).dataset.smid = launchID;
+			return info;
+		}).then(loadMsg);
+	}
+
+	if(apidata.flashvars.movie_type === 'mp4') {
 		if(alwaysLowQuality){
-              $.ajax({
-                  type:'GET',
-                  url:'/watch/'+apidata.videoDetail.v,
-                  data:{
-                      eco:"1"
-                  },
-              });
-          }
-    }else{
-        Flash = true;
+			$.ajax({
+					type:'GET',
+					url:'/watch/'+apidata.videoDetail.v,
+					data:{
+						eco:"1"
+					},
+				});
+			}
+	}else{
+		Flash = true;
 		GM_xmlhttpRequest({
 			method:"GET",
 			url:"http://sp.nicovideo.jp/watch/" + apidata.flashvars.v ,
@@ -1378,27 +1393,9 @@
 				$.ajax({
 					type:'GET',
 					url:apiUrl,
-					// キタナイ
 					success:()=>{
-						promise = loadApiInfo(launchID).then(info => {
-							window.commentServerThreadId = info.thread_id;
-							if(Flash){
-								info.url = info.url.replace("?v","?m");
-							}
-							if(alwaysLowQuality  && info.url.slice(-3) !== 'low'){
-								//lowをつけないと駄目な場合とつけると動かない場合がある(同時刻、isPeakTimeはtrueで確認)
-								//めんどいのでinfo.urlにlowが含まれるかどうかだけで判断する
-								if (info.url.slice(-3) !== 'low'){
-								  info.url += 'low';
-								}
-							}
-							$video.attr('src', info.url);
-							$video.get(0).dataset.smid = launchID;
-							return info;
-						});
-						//メッセージ取得、文字流しとかのループイベント登録
-						promise.then(loadMsg);
-					}
+						load();
+					},
 				});
 			}
 		})
@@ -1627,7 +1624,9 @@
       });
     });
     StateWatcher.startWatch();
-    
+    if(!Flash){
+    	load();
+    }
   });
   
   /*
